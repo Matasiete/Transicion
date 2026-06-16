@@ -62,6 +62,23 @@ def rotar_punto_local(punto_local, centro_local, angulo_grados):
 # DRAWER GT: ROTONDA CORREGIDA (CON RETORNO SEGURO SUBSURFACE Y GROSORES PARAMETRIZADOS)
 # ============================================================================
 def dibujar_rotonda(mano, escala, grosor_linea, tam_surf, gris, amarillo):
+    '''
+    Objetivo: Generar dinámicamente un molde procedural para una rotonda (RTD/RTI) en un lienzo virtual sobredimensionado. Dibuja arcos concéntricos e hilos rectos según la quiralidad ("I" o "D"), calcula el trazado divisorio de casillas radiales y recorta la superficie con precisión mediante un subsurface para optimizar los puntos de anclaje.
+    Parametros:
+    P1: mano, string -> Quiralidad de la pieza; "I" para mano izquierda (RTI), "D" para mano derecha (RTD).
+    P2: escala, int -> Factor multiplicador de píxeles para el diseño relativo de la loseta.
+    P3: grosor_linea, int -> Grosor en píxeles empleado para trazar las calzadas grises estándar.
+    P4: tam_surf, int -> Dimensión en píxeles del lienzo virtual cuadrado seguro (1200).
+    P5: gris, tuple -> Valor RGB correspondiente a las líneas divisorias y bordes estándar (GRIS_LINEAS).
+    P6: amarillo, tuple -> Valor RGB correspondiente al hilo continuo de seguridad derecho (AMARILLO_DERECHO).
+    Returns:
+    surf_cortada, pygame.Surface -> Superficie recortada que contiene la geometría exacta de la rotonda sin transparencias muertas.
+    datos_enganche, dict -> Coordenadas locales de entrada (X, Y) y salida (X, Y) calculadas de forma estanca desde el marco recortado.
+    LLama a: math.sqrt(), math.asin(), math.degrees(), math.radians(), math.cos(), math.sin(), pygame.Surface(), pygame.draw.lines(), pygame.draw.line(), pygame.draw.circle(), pygame.Surface.subsurface(), pygame.Surface.copy()
+    LLamada por: Bloque de inicialización de moldes al arrancar el script (líneas 152 y 153 para surf_rtd_gt y surf_rti_gt).
+    '''    
+    
+    
     surf_canvas = pygame.Surface((tam_surf, tam_surf), pygame.SRCALPHA)
 
     s = -1 if mano == "I" else 1
@@ -235,8 +252,21 @@ CATALOGO_PIEZAS = {
 # =============================================================================
 def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     '''
-    Objetivo: Actúa como función de cálculo única para cualquier pieza. Recibe el punto de conexión global y el ángulo acumulado de la carrera, absorbe las discrepancias de diseño del molde y devuelve la superficie rotada lista para pintar junto con sus nuevas coordenadas y el ángulo de salida actualizado.
-    '''
+    Objetivo: Actúa como función de cálculo única para cualquier pieza. Recibe el punto de conexión global y el ángulo acumulado de la carrera, absorbe las discrepancies de diseño del molde y devuelve la superficie rotada lista para pintar junto con sus nuevas coordenadas y el ángulo de salida actualizado.
+    Parametros:
+    P1: codigo, string -> Código nominal de la pieza ("R", "RTD").
+    P2: eje_conexion_mundo, pygame.Vector2 -> Punto medio de la salida de la pieza anterior en el mundo.
+    P3: angulo_acumulado (float) -> Dirección actual de la carrera en grados.
+    Returns:
+    surf_rotada, pygame.Surface -> Imagen de la pieza girada correctamente.
+    rect_pieza, pygame.Rect -> Rectángulo posicionado en el espacio del mundo.
+    mundo_sal_C, pygame.Vector2 -> Posición global de la salida izquierda (Gris).
+    mundo_sal_D, pygame.Vector2 -> Posición global de la salida derecha (Amarilla).
+    nuevo_angulo, float -> Ángulo de dirección de la carrera actualizado para la siguiente loseta.
+    LLama a: rotar_punto_local(), pygame.transform.rotate()
+    LLamada por: Bloque de procesamiento de la pista (Main) en el bucle iterativo de la receta de tramos.
+    '''    
+    
     if codigo not in CATALOGO_PIEZAS:
         print(f"Error: La pieza '{codigo}' no existe en el catálogo.")
         return None
