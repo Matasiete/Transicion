@@ -1,17 +1,18 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 17 08:00:55 2026
+Created on Wed Jun 17 11:28:46 2026
 
 @author: SuperUser
 """
 
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun 16 15:41:59 2026
+
+Created on Tue Jun 17 15:41:59 2026
 
 @author: Matasiete
 
-Arcs018 Entra en pantalla.
+Arcs020 Testing RC. A falta de SCI SCD y ya.
 """
 
 import pygame
@@ -27,7 +28,7 @@ pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportac
 clock = pygame.time.Clock()
 
 # --- CONSTANTES DE DISEÑO UNIFICADAS ---
-ESCALA = 4           
+ESCALA = 10           
 ANCHO_VIA = 6 * ESCALA  
 GROSOR_LINEA = 2         # Grosor base para calzadas grises
 GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
@@ -35,7 +36,7 @@ GROSOR_AMARILLO = 3      # Variable global parametrizada para el hilo derecho
 
 # Variables de control del circuito
 COLOR_FONDO = (255, 255, 255) # Fondo blanco solicitado
-ANGULO_INICIAL = 90.0         # Ángulo de control inicial para la primera pieza
+ANGULO_INICIAL = -45.0         # Ángulo de control inicial para la primera pieza
 
 # Paleta de colores unificada
 COLOR_LINEA = (0, 0, 0)
@@ -243,6 +244,20 @@ CATALOGO_PIEZAS = {
         "ang_correccion": 0.0,   
         "aporte_angular": 0.0    
     },
+    "RC": {
+        "ancho": 9.6 * ESCALA,
+        "alto": 6 * ESCALA,
+        "angulo_giro": 0.0,
+        "ang_correccion": 0.0,
+        "aporte_angular": 0.0,
+        "centro_local": pygame.Vector2(4.8 * ESCALA, 3 * ESCALA),
+        # Entrada en el lateral izquierdo unificado
+        "ent_local_A": pygame.Vector2(0.0, 0.0),
+        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
+        # Salida recta pura exactamente a 9.6 unidades de distancia física
+        "sal_local_C": pygame.Vector2(9.6 * ESCALA, 0.0),
+        "sal_local_D": pygame.Vector2(9.6 * ESCALA, 6 * ESCALA),
+    },
     "RTD": {
         "superficie": surf_rtd_gt,
         "centro_local": pygame.Vector2(w_rtd / 2.0, h_rtd / 2.0),
@@ -263,25 +278,36 @@ CATALOGO_PIEZAS = {
         "ang_correccion": -90.0, 
         "aporte_angular": -90.0  
     },
-    # --- NUEVAS DEFINICIONES DE CURVAS ESTÁNDAR ---
+# ////////////////////////////////////////////////////////////
+# --- ANTES (LÍNEAS QUE NO CAMBIAN) ---
+#         "ang_correccion": -90.0,
+#         "aporte_angular": -90.0
+#     },
+# ////////////////////////////////////////////////////////////
+
     "CD90": {
         "ancho": 8 * ESCALA,
         "alto": 8 * ESCALA,
         "angulo_giro": -90,
+        "ang_correccion": 0.0,
+        "aporte_angular": -90.0,
+        "centro_local": pygame.Vector2(4 * ESCALA, 4 * ESCALA),
         "ent_local_A": pygame.Vector2(0.0, 0.0),
         "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
-        # Salida rotada -90 grados. El radio exterior (D, amarillo) es 8. El interior (C, gris) es 2.
-        "sal_local_C": pygame.Vector2(2 * ESCALA, 8 * ESCALA),
-        "sal_local_D": pygame.Vector2(8 * ESCALA, 8 * ESCALA),
+        "sal_local_C": pygame.Vector2(8 * ESCALA, 8 * ESCALA),
+        "sal_local_D": pygame.Vector2(2 * ESCALA, 8 * ESCALA),
     },
     "CI90": {
         "ancho": 8 * ESCALA,
         "alto": 8 * ESCALA,
         "angulo_giro": 90,
         "ang_correccion": 0.0,
+        "aporte_angular": 90.0,
+        "centro_local": pygame.Vector2(4 * ESCALA, 4 * ESCALA),
+        # CORRECCIÓN DE QUIRALIDAD: Entrada en el flanco inferior izquierdo del lienzo
         "ent_local_A": pygame.Vector2(0.0, 2 * ESCALA),
         "ent_local_B": pygame.Vector2(0.0, 8 * ESCALA),
-        # Salida rotada +90 grados. El radio interior (D, amarillo) es 2. El exterior (C, gris) es 8.
+        # Salida pura orientada al norte: C es exterior (8), D es interior amarillo (2) en y=0
         "sal_local_C": pygame.Vector2(8 * ESCALA, 0.0),
         "sal_local_D": pygame.Vector2(2 * ESCALA, 0.0),
     },
@@ -290,29 +316,35 @@ CATALOGO_PIEZAS = {
         "alto": 12 * ESCALA,
         "angulo_giro": -45,
         "ang_correccion": 0.0,
+        "aporte_angular": -45.0,
+        "centro_local": pygame.Vector2(6 * ESCALA, 6 * ESCALA),
         "ent_local_A": pygame.Vector2(0.0, 0.0),
         "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
-        # Salida rotada -45 grados. Proyección trigonométrica exacta desde el centro (0, 12 * ESCALA).
-        # Centro local: cx = 0, cy = 12 * ESCALA.
-        # sal_local_C (Radio 6): x = 6 * sin(45), y = 12 - 6 * cos(45)
-        "sal_local_C": pygame.Vector2(6 * ESCALA * 0.70710678, (12 - 6 * 0.70710678) * ESCALA),
-        # sal_local_D (Radio 12, amarillo): x = 12 * sin(45), y = 12 - 12 * cos(45)
-        "sal_local_D": pygame.Vector2(12 * ESCALA * 0.70710678, (12 - 12 * 0.70710678) * ESCALA),
+        "sal_local_C": pygame.Vector2(12 * ESCALA * 0.70710678, 12 * ESCALA * (1.0 - 0.70710678)),
+        "sal_local_D": pygame.Vector2(6 * ESCALA * 0.70710678, (12.0 - 6.0 * 0.70710678) * ESCALA),
     },
     "CI45": {
         "ancho": 12 * ESCALA,
         "alto": 12 * ESCALA,
         "angulo_giro": 45,
         "ang_correccion": 0.0,
+        "aporte_angular": 45.0,
+        "centro_local": pygame.Vector2(6 * ESCALA, 6 * ESCALA),
+        # CORRECCIÓN DE QUIRALIDAD: Entrada alineada en la banda inferior de la calzada de 12
         "ent_local_A": pygame.Vector2(0.0, 6 * ESCALA),
         "ent_local_B": pygame.Vector2(0.0, 12 * ESCALA),
-        # Salida rotada +45 grados. Proyección trigonométrica exacta desde el centro (0, 0).
-        # Centro local: cx = 0, cy = 0.
-        # sal_local_C (Radio 12): x = 12 * sin(45), y = 12 * cos(45)
+        # Salida proyectada de forma estricta desde el centro inferior (0, 12 * ESCALA) hacia arriba
         "sal_local_C": pygame.Vector2(12 * ESCALA * 0.70710678, 12 * ESCALA * 0.70710678),
-        # sal_local_D (Radio 6, amarillo): x = 6 * sin(45), y = 6 * cos(45)
         "sal_local_D": pygame.Vector2(6 * ESCALA * 0.70710678, 6 * ESCALA * 0.70710678),
     },
+
+# ////////////////////////////////////////////////////////////
+# --- DESPUÉS (LÍNEAS QUE NO CAMBIAN) ---
+# }
+# 
+# # =============================================================================
+# ////////////////////////////////////////////////////////////
+
 }
 
 # =============================================================================
@@ -357,11 +389,43 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
 
 # --- PROCESAMIENTO DINÁMICO DE LA PISTA ---
-cadena_entrada = "R, RTD, R, RTI, CD45, CI45, CD90, CI90"  # Entrada parametrizada del usuario
+cadena_entrada = "R, ,CD45, RC, RC, RC CI90, CD45, RTD, R, CD90, CD45, RTI, CI45, CD90, CI90"  # Entrada parametrizada del usuario
 despieze = [token.strip().upper() for token in cadena_entrada.split(",") if token.strip()]
 
 punto_conexion_actual = pygame.Vector2(450, 550)
 angulo_carrera_actual = ANGULO_INICIAL
+
+# ////////////////////////////////////////////////////////////
+
+    # --- FABRICACIÓN GRÁFICA DE SUPERFICIE PARA RECTA CORTA (RC) REAL (9.6 U) ---
+cfg_rc = CATALOGO_PIEZAS["RC"]
+surf_rc_local = pygame.Surface((int(cfg_rc["ancho"]), int(cfg_rc["alto"])), pygame.SRCALPHA)
+
+l_corta = 9.6 * ESCALA
+ancho_via_local = 6 * ESCALA
+
+# Líneas perimetrales (Regla de Oro: derecha es Amarilla)
+pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, 0), (l_corta, 0), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, AMARILLO_DERECHO, (0, ancho_via_local), (l_corta, ancho_via_local), GROSOR_LINEA + 1)
+
+# Bocas de cierre de la loseta de cartón
+pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, 0), (0, ancho_via_local), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, GRIS_LINEAS, (l_corta, 0), (l_corta, ancho_via_local), GROSOR_LINEA)
+
+# Línea central divisoria de carriles
+pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, ancho_via_local // 2), (l_corta, ancho_via_local // 2), GROSOR_LINEA)
+
+# 2 travesaños internos para formar exactamente las 3 casillas reales de carrera (3.2 unidades cada una)
+ancho_casilla_rc = l_corta / 3.0
+for i in range(1, 3):
+    x_t = i * ancho_casilla_rc
+    pygame.draw.line(surf_rc_local, GRIS_LINEAS, (x_t, 0), (x_t, ancho_via_local), GROSOR_LINEA)
+
+# Guardar la superficie e inyectar el promedio de enganche en el motor
+CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
+CATALOGO_PIEZAS["RC"]["promedio_entrada_local"] = (cfg_rc["ent_local_A"] + cfg_rc["ent_local_B"]) / 2.0
+
+# ////////////////////////////////////////////////////////////
 
 piezas_calculadas = []
 
@@ -372,7 +436,7 @@ piezas_calculadas = []
 # piezas_calculadas = []
 # ////////////////////////////////////////////////////////////
 
-# --- INYECCIÓN DE GENERACIÓN DE SUPERFICIES PARA CURVAS ESTÁNDAR ---
+# --- BLOQUE 2: FABRICACIÓN GRÁFICA DE SUPERFICIES PARA CURVAS ESTÁNDAR ---
 for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     cfg = CATALOGO_PIEZAS[codigo]
     ancho_local = int(cfg["ancho"])
@@ -428,7 +492,7 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
                      (cx_arco + r_int * math.cos(rad_m), cy_arco - r_int * math.sin(rad_m)), 
                      (cx_arco + r_ext * math.cos(rad_m), cy_arco - r_ext * math.sin(rad_m)), GROSOR_LINEA)
 
-    # Inyectar la superficie generada y calcular su promedio de entrada local exigido por el motor
+    # Asignar la superficie fabricada y calcular el promedio requerido
     CATALOGO_PIEZAS[codigo]["superficie"] = surf_local
     CATALOGO_PIEZAS[codigo]["promedio_entrada_local"] = (cfg["ent_local_A"] + cfg["ent_local_B"]) / 2.0
 
