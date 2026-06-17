@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 """
+Created on Wed Jun 17 08:00:55 2026
+
+@author: SuperUser
+"""
+
+# -*- coding: utf-8 -*-
+"""
 Created on Tue Jun 16 15:41:59 2026
 
 @author: Matasiete
@@ -20,7 +27,7 @@ pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportac
 clock = pygame.time.Clock()
 
 # --- CONSTANTES DE DISEÑO UNIFICADAS ---
-ESCALA = 6           
+ESCALA = 4           
 ANCHO_VIA = 6 * ESCALA  
 GROSOR_LINEA = 2         # Grosor base para calzadas grises
 GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
@@ -255,7 +262,57 @@ CATALOGO_PIEZAS = {
         "sal_local_D": pygame.Vector2(sx_rti, sy_rti + ANCHO_VIA / 2.0),
         "ang_correccion": -90.0, 
         "aporte_angular": -90.0  
-    }
+    },
+    # --- NUEVAS DEFINICIONES DE CURVAS ESTÁNDAR ---
+    "CD90": {
+        "ancho": 8 * ESCALA,
+        "alto": 8 * ESCALA,
+        "angulo_giro": -90,
+        "ent_local_A": pygame.Vector2(0.0, 0.0),
+        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
+        # Salida rotada -90 grados. El radio exterior (D, amarillo) es 8. El interior (C, gris) es 2.
+        "sal_local_C": pygame.Vector2(2 * ESCALA, 8 * ESCALA),
+        "sal_local_D": pygame.Vector2(8 * ESCALA, 8 * ESCALA),
+    },
+    "CI90": {
+        "ancho": 8 * ESCALA,
+        "alto": 8 * ESCALA,
+        "angulo_giro": 90,
+        "ang_correccion": 0.0,
+        "ent_local_A": pygame.Vector2(0.0, 2 * ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 8 * ESCALA),
+        # Salida rotada +90 grados. El radio interior (D, amarillo) es 2. El exterior (C, gris) es 8.
+        "sal_local_C": pygame.Vector2(8 * ESCALA, 0.0),
+        "sal_local_D": pygame.Vector2(2 * ESCALA, 0.0),
+    },
+    "CD45": {
+        "ancho": 12 * ESCALA,
+        "alto": 12 * ESCALA,
+        "angulo_giro": -45,
+        "ang_correccion": 0.0,
+        "ent_local_A": pygame.Vector2(0.0, 0.0),
+        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
+        # Salida rotada -45 grados. Proyección trigonométrica exacta desde el centro (0, 12 * ESCALA).
+        # Centro local: cx = 0, cy = 12 * ESCALA.
+        # sal_local_C (Radio 6): x = 6 * sin(45), y = 12 - 6 * cos(45)
+        "sal_local_C": pygame.Vector2(6 * ESCALA * 0.70710678, (12 - 6 * 0.70710678) * ESCALA),
+        # sal_local_D (Radio 12, amarillo): x = 12 * sin(45), y = 12 - 12 * cos(45)
+        "sal_local_D": pygame.Vector2(12 * ESCALA * 0.70710678, (12 - 12 * 0.70710678) * ESCALA),
+    },
+    "CI45": {
+        "ancho": 12 * ESCALA,
+        "alto": 12 * ESCALA,
+        "angulo_giro": 45,
+        "ang_correccion": 0.0,
+        "ent_local_A": pygame.Vector2(0.0, 6 * ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 12 * ESCALA),
+        # Salida rotada +45 grados. Proyección trigonométrica exacta desde el centro (0, 0).
+        # Centro local: cx = 0, cy = 0.
+        # sal_local_C (Radio 12): x = 12 * sin(45), y = 12 * cos(45)
+        "sal_local_C": pygame.Vector2(12 * ESCALA * 0.70710678, 12 * ESCALA * 0.70710678),
+        # sal_local_D (Radio 6, amarillo): x = 6 * sin(45), y = 6 * cos(45)
+        "sal_local_D": pygame.Vector2(6 * ESCALA * 0.70710678, 6 * ESCALA * 0.70710678),
+    },
 }
 
 # =============================================================================
@@ -300,13 +357,87 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
 
 # --- PROCESAMIENTO DINÁMICO DE LA PISTA ---
-cadena_entrada = "R, RTD, R, RTI, R, R, R, R"  # Entrada parametrizada del usuario
+cadena_entrada = "R, RTD, R, RTI, CD45, CI45, CD90, CI90"  # Entrada parametrizada del usuario
 despieze = [token.strip().upper() for token in cadena_entrada.split(",") if token.strip()]
 
 punto_conexion_actual = pygame.Vector2(450, 550)
 angulo_carrera_actual = ANGULO_INICIAL
 
 piezas_calculadas = []
+
+# ////////////////////////////////////////////////////////////
+# --- ANTES (LÍNEAS QUE NO CAMBIAN) ---
+#         cfg["promedio_entrada_local"] = (v_ent_A + v_ent_B) / 2.0
+# 
+# piezas_calculadas = []
+# ////////////////////////////////////////////////////////////
+
+# --- INYECCIÓN DE GENERACIÓN DE SUPERFICIES PARA CURVAS ESTÁNDAR ---
+for codigo in ["CD90", "CI90", "CD45", "CI45"]:
+    cfg = CATALOGO_PIEZAS[codigo]
+    ancho_local = int(cfg["ancho"])
+    alto_local = int(cfg["alto"])
+    
+    # Crear la superficie local transparente
+    surf_local = pygame.Surface((ancho_local, alto_local), pygame.SRCALPHA)
+    
+    es_90 = '90' in codigo
+    es_izq = 'I' in codigo
+    r_int = 2 * ESCALA if es_90 else 6 * ESCALA
+    r_ext = 8 * ESCALA if es_90 else 12 * ESCALA
+    angulo_giro = 90 if es_90 else 45
+
+    # Configuración de centros de arco locales según quiralidad
+    if es_izq:
+        cx_arco, cy_arco = 0.0, alto_local - r_ext
+        ang_i, ang_f = 270, 270 + angulo_giro
+    else:
+        cx_arco, cy_arco = 0.0, r_ext
+        ang_i, ang_f = 90 - angulo_giro, 90
+
+    # Generación de puntos del arco vectorial
+    puntos_ext = []
+    puntos_int = []
+    for grado in range(int(ang_i), int(ang_f) + 1):
+        rad = math.radians(grado)
+        puntos_ext.append((cx_arco + r_ext * math.cos(rad), cy_arco - r_ext * math.sin(rad)))
+        puntos_int.append((cx_arco + r_int * math.cos(rad), cy_arco - r_int * math.sin(rad)))
+
+    # Dibujo de líneas perimetrales (Regla de Oro: Derecha en la marcha siempre Amarilla)
+    if len(puntos_ext) >= 2:
+        pygame.draw.lines(surf_local, AMARILLO_DERECHO if es_izq else GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA + 1 if es_izq else GROSOR_LINEA)
+        pygame.draw.lines(surf_local, GRIS_LINEAS if es_izq else AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA if es_izq else GROSOR_LINEA + 1)
+
+    # Bocas de entrada y salida (Líneas de cierre estancas)
+    pygame.draw.line(surf_local, GRIS_LINEAS, puntos_ext[0], puntos_int[0], GROSOR_LINEA)
+    pygame.draw.line(surf_local, GRIS_LINEAS, puntos_ext[-1], puntos_int[-1], GROSOR_LINEA)
+
+    # Línea central transmedia en curva
+    r_med = (r_int + r_ext) / 2.0
+    puntos_centro = []
+    for grado in range(int(ang_i), int(ang_f) + 1):
+        rad = math.radians(grado)
+        puntos_centro.append((cx_arco + r_med * math.cos(rad), cy_arco - r_med * math.sin(rad)))
+    if len(puntos_centro) >= 2:
+        pygame.draw.lines(surf_local, GRIS_LINEAS, False, puntos_centro, GROSOR_LINEA)
+
+    # Travesaño intermedio angular para dividir las casillas
+    grado_medio = ang_i + (angulo_giro / 2.0)
+    rad_m = math.radians(grado_medio)
+    pygame.draw.line(surf_local, GRIS_LINEAS, 
+                     (cx_arco + r_int * math.cos(rad_m), cy_arco - r_int * math.sin(rad_m)), 
+                     (cx_arco + r_ext * math.cos(rad_m), cy_arco - r_ext * math.sin(rad_m)), GROSOR_LINEA)
+
+    # Inyectar la superficie generada y calcular su promedio de entrada local exigido por el motor
+    CATALOGO_PIEZAS[codigo]["superficie"] = surf_local
+    CATALOGO_PIEZAS[codigo]["promedio_entrada_local"] = (cfg["ent_local_A"] + cfg["ent_local_B"]) / 2.0
+
+# ////////////////////////////////////////////////////////////
+# --- DESPUÉS (LÍNEAS QUE NO CAMBIAN) ---
+# for tipo in despieze:
+#     resultado = procesar_y_conectar_pieza(tipo, punto_conexion_actual, angulo_carrera_actual)
+# ////////////////////////////////////////////////////////////
+
 
 for tipo in despieze:
     resultado = procesar_y_conectar_pieza(tipo, punto_conexion_actual, angulo_carrera_actual)
