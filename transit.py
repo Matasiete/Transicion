@@ -12,7 +12,7 @@ Created on Tue Jun 17 15:41:59 2026
 
 @author: Matasiete
 
-Arcs020 Testing RC. A falta de SCI SCD y ya.
+Arcs020 RC correcta. testing de de SCI SCD y ya.
 """
 
 import pygame
@@ -28,7 +28,7 @@ pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportac
 clock = pygame.time.Clock()
 
 # --- CONSTANTES DE DISEÑO UNIFICADAS ---
-ESCALA = 10           
+ESCALA = 6          
 ANCHO_VIA = 6 * ESCALA  
 GROSOR_LINEA = 2         # Grosor base para calzadas grises
 GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
@@ -36,7 +36,7 @@ GROSOR_AMARILLO = 3      # Variable global parametrizada para el hilo derecho
 
 # Variables de control del circuito
 COLOR_FONDO = (255, 255, 255) # Fondo blanco solicitado
-ANGULO_INICIAL = -45.0         # Ángulo de control inicial para la primera pieza
+ANGULO_INICIAL = 0         # Ángulo de control inicial para la primera pieza
 
 # Paleta de colores unificada
 COLOR_LINEA = (0, 0, 0)
@@ -232,6 +232,83 @@ w_rti, h_rti = surf_rti_gt.get_width(), surf_rti_gt.get_height()
 ex_rtd, ey_rtd, sx_rtd, sy_rtd = enganche_rtd["entrada_x"], enganche_rtd["entrada_y"], enganche_rtd["salida_x"], enganche_rtd["salida_y"]
 ex_rti, ey_rti, sx_rti, sy_rti = enganche_rti["entrada_x"], enganche_rti["entrada_y"], enganche_rti["salida_x"], enganche_rti["salida_y"]
 
+
+
+
+# ////////////////////////////////////////////////////////////
+
+def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
+    surf_local = pygame.Surface((tam_surf, tam_surf), pygame.SRCALPHA)
+    
+    if mano == "I":
+        s = -1
+        color_ext = gris
+        color_int = amarillo
+    else:
+        s = 1
+        color_ext = amarillo
+        color_int = gris
+
+    x_X = tam_surf // 2
+    y_X = tam_surf // 2 + 150
+    calzada = 6.0 * escala
+    techo_total = 18.0 * escala
+    alto_der = 10.5 * escala
+    alto_izq = 6.0 * escala
+    ancho_hueco = 6.0 * escala
+    prof_hueco = 2.0 * escala 
+
+    x_der_ext = x_X + (calzada / 2.0) * s
+    x_der_int = x_X - (calzada / 2.0) * s
+    y_base_der = y_X
+    y_techo = y_X - alto_der
+    x_izq_ext = x_der_ext - techo_total * s
+    x_izq_int = x_izq_ext + calzada * s
+    y_base_izq = y_techo + alto_izq
+    x_hueco_der = x_der_int
+    y_hueco_fondo = y_techo + (alto_der - prof_hueco) - calzada
+
+    # Trazado Perimetral Base
+    pygame.draw.line(surf_local, color_ext, (x_der_ext, y_base_der), (x_der_ext, y_techo), grosor_linea)
+    pygame.draw.line(surf_local, color_ext, (x_der_ext, y_techo), (x_izq_ext, y_techo), grosor_linea)
+    pygame.draw.line(surf_local, color_ext, (x_izq_ext, y_techo), (x_izq_ext, y_base_izq), grosor_linea)
+
+    pygame.draw.line(surf_local, color_int, (x_der_int, y_base_der), (x_der_int, y_hueco_fondo + prof_hueco), grosor_linea)
+    pygame.draw.line(surf_local, color_int, (x_der_int, y_hueco_fondo + prof_hueco), (x_hueco_der - ancho_hueco * s, y_hueco_fondo + prof_hueco), grosor_linea)
+    pygame.draw.line(surf_local, color_int, (x_izq_int, y_base_izq), (x_izq_int, y_hueco_fondo + prof_hueco), grosor_linea)
+ 
+    # Casillas interiores lateral estrecho
+    pygame.draw.line(surf_local, gris, (x_hueco_der - ancho_hueco * s, y_hueco_fondo + prof_hueco), (x_hueco_der - ancho_hueco * s, y_techo), grosor_linea)
+    pygame.draw.line(surf_local, gris, (x_hueco_der, y_hueco_fondo + prof_hueco), (x_hueco_der, y_techo), grosor_linea)
+
+    # Tapas de extremos
+    pygame.draw.line(surf_local, gris, (x_izq_ext, y_base_izq), (x_izq_int, y_base_izq), grosor_linea) 
+    pygame.draw.line(surf_local, gris, (x_der_ext, y_base_der), (x_der_int, y_base_der), grosor_linea) 
+
+    # Estructura Interna
+    y_division_entrada = y_base_der - (alto_der - (y_hueco_fondo - y_techo)) / 2.0
+    x_eje_salida = x_izq_ext + (calzada / 2.0) * s
+    top_int_izq = (y_hueco_fondo + prof_hueco) - 10
+    
+    # Casillero horizontal lado largo
+    pygame.draw.line(surf_local, gris, (x_der_ext, y_division_entrada), (x_der_int, y_division_entrada), grosor_linea)
+    # Casillero vertical lado largo
+    pygame.draw.line(surf_local, gris, (x_X, y_base_der), (x_X, y_hueco_fondo + prof_hueco - (y_base_der - y_hueco_fondo + prof_hueco + 8)/5), grosor_linea)
+    # Casillero vertical lado corto
+    pygame.draw.line(surf_local, gris, (x_eje_salida, y_base_izq), (x_eje_salida, top_int_izq), grosor_linea)
+
+    # Diagonales
+    pygame.draw.line(surf_local, gris, (x_der_int, y_hueco_fondo + prof_hueco), (x_der_ext, y_techo), grosor_linea)
+    pygame.draw.line(surf_local, gris, (x_izq_ext, y_hueco_fondo), (x_izq_int, y_hueco_fondo + prof_hueco), grosor_linea)
+    
+    return surf_local
+
+# ////////////////////////////////////////////////////////////
+
+
+
+
+
 # --- DICCIONARIO DE CONFIGURACIÓN DE PIEZAS (Variables Complejas) ---
 CATALOGO_PIEZAS = {
     "R": {
@@ -278,6 +355,36 @@ CATALOGO_PIEZAS = {
         "ang_correccion": -90.0, 
         "aporte_angular": -90.0  
     },
+    "SCD": {
+        "ancho": 800,
+        "alto": 800,
+        "angulo_giro": 180.0,
+        # CORRECCIÓN: Resta los 90 grados de desviación del molde vertical para alinearlo al eje horizontal Este
+        "ang_correccion": -90.0,
+        "aporte_angular": 180.0,
+        "centro_local": pygame.Vector2(400.0, 400.0),
+        "ent_local_A": pygame.Vector2(400.0 - (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
+        "ent_local_B": pygame.Vector2(400.0 + (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
+        "sal_local_C": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * 1 - 18.0 * ESCALA + 6.0 * ESCALA, 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+        "sal_local_D": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * 1 - 18.0 * ESCALA, 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+    },
+    "SCI": {
+        "ancho": 800,
+        "alto": 800,
+        "angulo_giro": 180.0,
+        # CORRECCIÓN: Ajusta los 90 grados de desviación del molde vertical para alinearlo al eje horizontal Este
+        "ang_correccion": -90.0,
+        "aporte_angular": 180.0,
+        "centro_local": pygame.Vector2(400.0, 400.0),
+        "ent_local_A": pygame.Vector2(400.0 - (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
+        "ent_local_B": pygame.Vector2(400.0 + (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
+        "sal_local_C": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * (-1) - 18.0 * ESCALA * (-1), 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+        "sal_local_D": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * (-1) - 18.0 * ESCALA * (-1) + 6.0 * ESCALA * (-1), 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+    },
+
+
+# ////////////////////////////////////////////////////////////
+
 # ////////////////////////////////////////////////////////////
 # --- ANTES (LÍNEAS QUE NO CAMBIAN) ---
 #         "ang_correccion": -90.0,
@@ -389,7 +496,7 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
 
 # --- PROCESAMIENTO DINÁMICO DE LA PISTA ---
-cadena_entrada = "R, ,CD45, RC, RC, RC CI90, CD45, RTD, R, CD90, CD45, RTI, CI45, CD90, CI90"  # Entrada parametrizada del usuario
+cadena_entrada = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
 despieze = [token.strip().upper() for token in cadena_entrada.split(",") if token.strip()]
 
 punto_conexion_actual = pygame.Vector2(450, 550)
@@ -424,6 +531,20 @@ for i in range(1, 3):
 # Guardar la superficie e inyectar el promedio de enganche en el motor
 CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
 CATALOGO_PIEZAS["RC"]["promedio_entrada_local"] = (cfg_rc["ent_local_A"] + cfg_rc["ent_local_B"]) / 2.0
+
+# ////////////////////////////////////////////////////////////
+
+# --- INVOCACIÓN GRÁFICA DIRECTA DE TU FUNCIÓN NATIVA PARA CALLEJONES (SCD / SCI) ---
+for mano_cod in ["SCD", "SCI"]:
+    cfg_sc = CATALOGO_PIEZAS[mano_cod]
+    letra_mano = "D" if mano_cod == "SCD" else "I"
+    
+    # CORRECCIÓN: Se sustituye TAM_SURF por el valor literal 800 píxeles exigido por el lienzo
+    surf_fabricada = dibujar_sharp_corners(letra_mano, ESCALA, GROSOR_LINEA, 800, GRIS_LINEAS, AMARILLO_DERECHO)
+    
+    # Inyectar la superficie y calcular el promedio de entrada exigido por el motor rígido
+    CATALOGO_PIEZAS[mano_cod]["superficie"] = surf_fabricada
+    CATALOGO_PIEZAS[mano_cod]["promedio_entrada_local"] = (cfg_sc["ent_local_A"] + cfg_sc["ent_local_B"]) / 2.0
 
 # ////////////////////////////////////////////////////////////
 
