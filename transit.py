@@ -1,18 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Jun 17 11:28:46 2026
 
-@author: SuperUser
-"""
 
-# -*- coding: utf-8 -*-
-"""
-
-Created on Tue Jun 17 15:41:59 2026
+Created on Tue Jun 17 15:24:59 2026
 
 @author: Matasiete
 
-Arcs020 RC correcta. testing de de SCI SCD y ya.
+Arcs021 perfecto.  RC y SCI SCD y ya correctas con cerrado perfecto y con cierre al minuto.
 """
 
 import pygame
@@ -22,13 +16,13 @@ import os
 
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 pygame.init()
-WIDTH, HEIGHT = 900, 700
+WIDTH, HEIGHT = 1000, 800
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportación")
 clock = pygame.time.Clock()
 
 # --- CONSTANTES DE DISEÑO UNIFICADAS ---
-ESCALA = 6          
+ESCALA = 8           
 ANCHO_VIA = 6 * ESCALA  
 GROSOR_LINEA = 2         # Grosor base para calzadas grises
 GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
@@ -673,11 +667,36 @@ else:
     # Fallback en caso de que no haya piezas
     ancho_pista, alto_pista = 1.0, 1.0
     centro_pista = pygame.Vector2(0, 0)
+    
+# ////////////////////////////////////////////////////////////
 
-escala_x = (WIDTH * 0.90) / ancho_pista
-escala_y = (HEIGHT * 0.90) / alto_pista
-FACTOR_CAMARA = min(escala_x, escala_y)
-centro_pantalla = pygame.Vector2(WIDTH / 2.0, HEIGHT / 2.0)
+# --- CÁLCULO CEÑIDO AL CIRCUITO REAL MEDIANTE DICCIONARIOS DE ENTORNO ---
+if piezas_calculadas:
+    # En tu script real, cada elemento de la lista es un diccionario.
+    # Extraemos el centro en X e Y leyendo la clave de texto "rect"
+    puntos_x = [pieza["rect"].centerx for pieza in piezas_calculadas]
+    puntos_y = [pieza["rect"].centery for pieza in piezas_calculadas]
+    
+    # Margen de protección física ceñido para que las curvas anchas no se recorten en los bordes
+    margen_loseta = 15.0 * ESCALA 
+    
+    min_x = min(puntos_x) - margen_loseta
+    max_x = max(puntos_x) + margen_loseta
+    min_y = min(puntos_y) - margen_loseta
+    max_y = max(puntos_y) + margen_loseta
+
+    ancho_pista = max_x - min_x if (max_x - min_x) > 0 else 1.0
+    alto_pista = max_y - min_y if (max_y - min_y) > 0 else 1.0
+    
+    # Imponer el 5% de margen lateral mínimo por cada lado (90% de pantalla útil total)
+    escala_x = (WIDTH * 0.90) / ancho_pista
+    escala_y = (HEIGHT * 0.90) / alto_pista
+    FACTOR_CAMARA = min(escala_x, escala_y)
+    
+    centro_pista = pygame.Vector2((min_x + max_x) / 2.0, (min_y + max_y) / 2.0)
+    centro_pantalla = pygame.Vector2(WIDTH / 2.0, HEIGHT / 2.0)
+
+# ////////////////////////////////////////////////////////////
 
 # --- EXPORTACIÓN AUTOMÁTICA A PNG INCREMENTAL ---
 superficie_export = pygame.Surface((WIDTH, HEIGHT))
@@ -714,16 +733,37 @@ nombre_archivo_final = f"{nombre_script}_{contador}.png"
 pygame.image.save(superficie_export, nombre_archivo_final)
 print(f"[SISTEMA] Archivo exportado con éxito: {nombre_archivo_final}")
 
-# --- BUCLE DE INTERFAZ GRÁFICA ---
+
+
+# # ==========================================
+# # --- LOGICA DE VISUALIZACIÓN DINÁMICA DE LA CARRERA ---
+# ////////////////////////////////////////////////////////////
+
+# --- BUCLE DE INTERFAZ GRÁFICA CON AUTOCIERRE POR INACTIVIDAD ---
 paso_actual = 1
 running = True
 
+# Inicializar el temporizador al arrancar la interfaz gráfica
+tiempo_ultima_actividad = pygame.time.get_ticks()
+
 while running:
+    # Calcular el tiempo transcurrido desde la última pulsación de tecla o evento
+    tiempo_inactivo = (pygame.time.get_ticks() - tiempo_ultima_actividad) / 1000.0
+    
+    # Si pasa más de 1 minuto (60 segundos) sin actividad, se cierra solo
+    if tiempo_inactivo >= 60.0:
+        print("=== APAGADO AUTOMÁTICO: Ventana cerrada por inactividad tras 1 minuto ===")
+        running = False
+        break
+
     screen.fill(COLOR_FONDO)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
         elif event.type == pygame.KEYDOWN:
+            # CUALQUIER pulsación de tecla reinicia el contador de inactividad
+            tiempo_ultima_actividad = pygame.time.get_ticks()
+            
             if event.key == pygame.K_ESCAPE:
                 running = False
             elif event.key == pygame.K_SPACE:
@@ -768,3 +808,5 @@ while running:
 
 pygame.quit()
 sys.exit()
+
+# ////////////////////////////////////////////////////////////
