@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu Jun 18 12:56:33 2026
+Created on Tue Jun 17 15:24:59 2026
 
 @author: Matasiete
 
-Created on Tue Jun 17 15:24:59 2026
-
-Arcs021 provisional
+Arcs021 perfecto.  RC y SCI SCD y ya correctas con cerrado perfecto y con cierre al minuto.
 """
 
 import pygame
@@ -14,29 +12,31 @@ import sys
 import math
 import os
 
-# 1. IMPORTACIÓN PRIMERO
-import config
-from config import *
-
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 pygame.init()
-
-# Forzamos la lectura explícita desde el espacio de nombres de config para blindar Spyder
-ANCHO_PANTALLA = config.WIDTH
-ALTO_PANTALLA = config.HEIGHT
-
-screen = pygame.display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))
+WIDTH, HEIGHT = 1000, 800
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportación")
 clock = pygame.time.Clock()
 
-# --- CONSTANTES DE DISEÑO INTERNAS ---
+# --- CONSTANTES DE DISEÑO UNIFICADAS ---
+ESCALA = 8           
 ANCHO_VIA = 6 * ESCALA  
-GROSOR_LINEA = 2         
-GROSOR_DECORATIVO = 1    
-GROSOR_AMARILLO = 3      
-ANGULO_INICIAL = 0         
+GROSOR_LINEA = 2         # Grosor base para calzadas grises
+GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
+GROSOR_AMARILLO = 3      # Variable global parametrizada para el hilo derecho
 
+# Variables de control del circuito
+COLOR_FONDO = (255, 255, 255) # Fondo blanco solicitado
+ANGULO_INICIAL = 0         # Ángulo de control inicial para la primera pieza
 
+# Paleta de colores unificada
+COLOR_LINEA = (0, 0, 0)
+ROSA = (255, 0, 255)
+ROJO = (255, 0, 0)
+COLOR_AZULADO = (140, 150, 230) 
+AMARILLO_DERECHO = (255, 215, 0)
+GRIS_LINEAS = (128, 128, 128)
 
 # =============================================================================
 # ### rotar_punto_local()
