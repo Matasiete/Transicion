@@ -17,11 +17,6 @@ import os
 # 1. IMPORTACIÓN PRIMERO
 import config
 from config import *
-'''
-NEW!!!
-'''
-from presentacion import inicializar_pantalla, ejecutar_bucle_principal
-
 
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 pygame.init()
@@ -30,7 +25,7 @@ pygame.init()
 ANCHO_PANTALLA = config.WIDTH
 ALTO_PANTALLA = config.HEIGHT
 
-pantalla_objetivo = pygame.display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))
+screen = pygame.display.set_mode((ANCHO_PANTALLA, ALTO_PANTALLA))
 pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportación")
 clock = pygame.time.Clock()
 
@@ -747,21 +742,14 @@ paso_actual = 1
 running = True
 tiempo_ultima_actividad = pygame.time.get_ticks()
 
-'''
 while running:
     tiempo_inactivo = (pygame.time.get_ticks() - tiempo_ultima_actividad) / 1000.0
     if tiempo_inactivo >= 60.0:
         print("=== APAGADO AUTOMÁTICO: Ventana cerrada por inactividad tras 1 minuto ===")
         running = False
         break
-'''    
 
-def mi_funcion_de_renderizado(pantalla_objetivo):
-    """
-    Aquí dentro pones EXCLUSIVAMENTE las líneas que antes estaban en tu bucle while
-    y que se encargaban de dibujar el circuito. Asegúrate de sustituir 'pantalla_objetivo' por 'pantalla_objetivo'.
-    """
-    pantalla_objetivo.fill(COLOR_FONDO)
+    screen.fill(COLOR_FONDO)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -783,11 +771,11 @@ def mi_funcion_de_renderizado(pantalla_objetivo):
             centro_m = pygame.Vector2(pieza["rect"].center)
             centro_c = centro_pantalla + (centro_m - centro_pista) * FACTOR_CAMARA
             rect_vis.center = (int(centro_c.x), int(centro_c.y))
-            pantalla_objetivo.blit(surf_vis, rect_vis.topleft)
+            screen.blit(surf_vis, rect_vis.topleft)
             
             p_C_camara = centro_pantalla + (pieza["sal_C"] - centro_pista) * FACTOR_CAMARA
             p_D_camara = centro_pantalla + (pieza["sal_D"] - centro_pista) * FACTOR_CAMARA
-            pygame.draw.line(pantalla_objetivo, GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
+            pygame.draw.line(screen, GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
 
             if idx == 0 and len(despieze) > 0:
                 cfg_primera = CATALOGO_PIEZAS[despieze[0]]
@@ -795,17 +783,16 @@ def mi_funcion_de_renderizado(pantalla_objetivo):
                 centro_m1 = pygame.Vector2(pieza["rect"].center)
                 p_ent_A_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
                 p_ent_B_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
-                pygame.draw.line(pantalla_objetivo, GRIS_LINEAS, centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA, centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA, GROSOR_DECORATIVO)
+                pygame.draw.line(screen, GRIS_LINEAS, centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA, centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA, GROSOR_DECORATIVO)
 
-            pygame.draw.circle(pantalla_objetivo, ROSA, (int(p_C_camara.x), int(p_C_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
-            pygame.draw.circle(pantalla_objetivo, ROJO, (int(p_D_camara.x), int(p_D_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
-    
+            pygame.draw.circle(screen, ROSA, (int(p_C_camara.x), int(p_C_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
+            pygame.draw.circle(screen, ROJO, (int(p_D_camara.x), int(p_D_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
 
     # --- TEXTO INFORMATIVO DE PRESENTACIÓN ---
     font = pygame.font.SysFont(None, 22)
     txt_info = f"Paso: {paso_actual}/{len(piezas_calculadas)} | String: '{cadena_entrada}' | Archivo: {nombre_archivo_final}"
     txt = font.render(txt_info, True, COLOR_LINEA)
-    pantalla_objetivo.blit(txt, (20, 20))
+    screen.blit(txt, (20, 20))
     
     pygame.display.flip()
     clock.tick(60)
@@ -814,10 +801,8 @@ def mi_funcion_de_renderizado(pantalla_objetivo):
 pygame.quit()
 sys.exit()
 
-
-if __name__ == "__main__":
-    # Inicializamos la pantalla con el nuevo módulo
-    pantalla = inicializar_pantalla()
-
-    # Arrancamos el loop pasándole nuestra función de dibujo
-    ejecutar_bucle_principal(pantalla, mi_funcion_de_renderizado)
+# ////////////////////////////////////////////////////////////
+# --- DESPUÉS (LÍNEAS QUE NO CAMBIAN) ---
+# # FIN DEL ARCHIVO
+# ////////////////////////////////////////////////////////////
+              
