@@ -34,7 +34,7 @@ ANCHO_VIA = 6 * config.ESCALA
 GROSOR_LINEA = 2         
 GROSOR_DECORATIVO = 1    
 GROSOR_AMARILLO = 3      
-ANGULO_INICIAL = 90    
+ANGULO_INICIAL = 0 
 # Dimensiones reales físicas de la Recta Corta (RC)
 ANCHO_RC_REAL = int(9.6 * config.ESCALA)
 ALTO_RC_REAL = int(6 * config.ESCALA)
@@ -50,6 +50,14 @@ ANCHO_VIA = 6 * config.ESCALA
 ancho_rc = 19 * config.ESCALA
 alto_rc = 6 * config.ESCALA
 tam_seguro = 2000
+
+## ============================================================
+## ### Cadena de piezas a dibujar.
+## ============================================================
+#cadena_entrada = "R, CD90, CD90, R, RTI, RC, R"
+#cadena_entrada = "R, CD90, CD90, CD90, RC, R"
+cadena_entrada = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
+#cadena_entrada = "R, RC, R, CD90, RC, RC, CI45, RC"
 
 
 # ============================================================================
@@ -526,10 +534,7 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
 
 # --- PROCESAMIENTO DINÁMICO DE LA PISTA ---
-#cadena_entrada = "R, CD90, CD90, R, RTI, RC, R"
-#cadena_entrada = "R, CD90, CD90, CD90, RC, R"
-#cadena_entrada = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
-cadena_entrada = "R, RC, R, CD90, RC, RC, CI45, RC"
+
 despieze = [token.strip().upper() for token in cadena_entrada.split(",") if token.strip()]
 
 punto_conexion_actual = pygame.Vector2(450, 550)
@@ -747,7 +752,10 @@ for idx, pieza in enumerate(piezas_calculadas):
     rect_escalado = surf_escalada.get_rect()
     centro_pieza_mundo = pygame.Vector2(pieza["rect"].center)
     centro_pieza_camara = centro_pantalla + (centro_pieza_mundo - centro_pista) * FACTOR_CAMARA
-    rect_escalado.center = (int(centro_pieza_camara.x), int(centro_pieza_camara.y))
+    #rect_escalado.center = (int(centro_pieza_camara.x), int(centro_pieza_camara.y))
+    rect_escalado.center = (int(round(centro_pieza_camara.x)), int(round(centro_pieza_camara.y)))
+
+    
     superficie_export.blit(surf_escalada, rect_escalado.topleft)
     
     p_C_camara = centro_pantalla + (pieza["sal_C"] - centro_pista) * FACTOR_CAMARA
@@ -827,7 +835,9 @@ while running:
             
             centro_m = pygame.Vector2(pieza["rect"].center)
             centro_c = centro_pantalla + (centro_m - centro_pista) * FACTOR_CAMARA
-            rect_vis.center = (int(centro_c.x), int(centro_c.y))
+            #rect_vis.center = (int(centro_c.x), int(centro_c.y))
+            rect_vis.center = (int(round(centro_c.x)), int(round(centro_c.y)))
+            
             screen.blit(surf_vis, rect_vis.topleft)
             
             p_C_camara = centro_pantalla + (pieza["sal_C"] - centro_pista) * FACTOR_CAMARA
