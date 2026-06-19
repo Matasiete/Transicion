@@ -1,10 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Jun 17 15:24:59 2026
+Created on Thu Jun 18 12:56:33 2026
 
 @author: Matasiete
 
-Arcs021 perfecto.  RC y SCI SCD y ya correctas con cerrado perfecto y con cierre al minuto.
+Created on Tue Jun 17 15:24:59 2026
+
+Arcs021 provisional
 """
 
 import pygame
@@ -12,31 +14,29 @@ import sys
 import math
 import os
 
+# 1. IMPORTACIÓN PRIMERO
+import config
+
+
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
 pygame.init()
-WIDTH, HEIGHT = 1000, 800
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
+
+# Forzamos la lectura explícita desde el espacio de nombres de config para blindar Spyder
+
+
+
+screen = pygame.display.set_mode((config.ANCHO_PANTALLA,  config.ALTO_PANTALLA))
 pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportación")
 clock = pygame.time.Clock()
 
-# --- CONSTANTES DE DISEÑO UNIFICADAS ---
-ESCALA = 8           
-ANCHO_VIA = 6 * ESCALA  
-GROSOR_LINEA = 2         # Grosor base para calzadas grises
-GROSOR_DECORATIVO = 1    # Grosor fino para travesaños internos y juntas
-GROSOR_AMARILLO = 3      # Variable global parametrizada para el hilo derecho
+# --- CONSTANTES DE DISEÑO INTERNAS ---
+ANCHO_VIA = 6 * config.ESCALA  
+GROSOR_LINEA = 2         
+GROSOR_DECORATIVO = 1    
+GROSOR_AMARILLO = 3      
+ANGULO_INICIAL = 0         
 
-# Variables de control del circuito
-COLOR_FONDO = (255, 255, 255) # Fondo blanco solicitado
-ANGULO_INICIAL = 0         # Ángulo de control inicial para la primera pieza
 
-# Paleta de colores unificada
-COLOR_LINEA = (0, 0, 0)
-ROSA = (255, 0, 255)
-ROJO = (255, 0, 0)
-COLOR_AZULADO = (140, 150, 230) 
-AMARILLO_DERECHO = (255, 215, 0)
-GRIS_LINEAS = (128, 128, 128)
 
 # =============================================================================
 # ### rotar_punto_local()
@@ -190,32 +190,32 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
 # --- FABRICACIÓN DE MOLDES MAESTROS ---
 
 # 1. PROTO GENERAL: RECTA (R) - Convenio General (Entrada Abierta, Salida Cerrada)
-LARGO_RECTA = 19 * ESCALA
+LARGO_RECTA = 19 * config.ESCALA
 surf_recta = pygame.Surface((LARGO_RECTA, ANCHO_VIA), pygame.SRCALPHA)
 cx_local, cy_local = 0, ANCHO_VIA
 
 # Márgenes longitudinales de la calzada
-pygame.draw.line(surf_recta, AMARILLO_DERECHO, (cx_local, cy_local), (cx_local + LARGO_RECTA, cy_local), GROSOR_AMARILLO)
-pygame.draw.line(surf_recta, GRIS_LINEAS, (cx_local, cy_local - ANCHO_VIA), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA), GROSOR_LINEA)
+pygame.draw.line(surf_recta, config.AMARILLO_DERECHO, (cx_local, cy_local), (cx_local + LARGO_RECTA, cy_local), GROSOR_AMARILLO)
+pygame.draw.line(surf_recta, config.GRIS_LINEAS, (cx_local, cy_local - ANCHO_VIA), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA), GROSOR_LINEA)
 
 # ❌ Entrada Abierta: Aquí NO se dibuja ninguna línea en cx_local
 # 🟢 Salida Cerrada: Sella su final de forma estricta con 1 píxel fino
-pygame.draw.line(surf_recta, GRIS_LINEAS, (cx_local + LARGO_RECTA, cy_local), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA), GROSOR_DECORATIVO)
+pygame.draw.line(surf_recta, config.GRIS_LINEAS, (cx_local + LARGO_RECTA, cy_local), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA), GROSOR_DECORATIVO)
 
 # Eje central divisorio de carriles
-pygame.draw.line(surf_recta, GRIS_LINEAS, (cx_local, cy_local - ANCHO_VIA / 2), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA / 2), GROSOR_DECORATIVO)
+pygame.draw.line(surf_recta, config.GRIS_LINEAS, (cx_local, cy_local - ANCHO_VIA / 2), (cx_local + LARGO_RECTA, cy_local - ANCHO_VIA / 2), GROSOR_DECORATIVO)
 
 # Subdivisión interna de las 6 casillas de juego
 ancho_casilla = LARGO_RECTA / 6.0
 for i in range(1, 6):
     x_t = cx_local + i * ancho_casilla
-    pygame.draw.line(surf_recta, GRIS_LINEAS, (x_t, cy_local), (x_t, cy_local - ANCHO_VIA), GROSOR_DECORATIVO)
+    pygame.draw.line(surf_recta, config.GRIS_LINEAS, (x_t, cy_local), (x_t, cy_local - ANCHO_VIA), GROSOR_DECORATIVO)
 
 
 # Ejecución maestra para llenar las variables dinámicas de las rotondas
 tam_seguro = 2000
-surf_rtd_gt, enganche_rtd = dibujar_rotonda("D", ESCALA, tam_seguro, GRIS_LINEAS, AMARILLO_DERECHO)
-surf_rti_gt, enganche_rti = dibujar_rotonda("I", ESCALA, tam_seguro, GRIS_LINEAS, AMARILLO_DERECHO)
+surf_rtd_gt, enganche_rtd = dibujar_rotonda("D", config.ESCALA, tam_seguro, config.GRIS_LINEAS, config.AMARILLO_DERECHO)
+surf_rti_gt, enganche_rti = dibujar_rotonda("I", config.ESCALA, tam_seguro, config.GRIS_LINEAS, config.AMARILLO_DERECHO)
 
 # --- EXTRACCIÓN SEGURA DE VECTORES DE ANCLAJE ---
 w_rtd, h_rtd = surf_rtd_gt.get_width(), surf_rtd_gt.get_height()
@@ -298,7 +298,8 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
 # ////////////////////////////////////////////////////////////
 
 
-
+# LARGO_RECTA = 19 * config.ESCALA
+# ANCHO_VIA = 6 * config.ESCALA 
 
 
 # --- DICCIONARIO DE CONFIGURACIÓN DE PIEZAS (Variables Complejas) ---
@@ -314,18 +315,18 @@ CATALOGO_PIEZAS = {
         "aporte_angular": 0.0    
     },
     "RC": {
-        "ancho": 9.6 * ESCALA,
-        "alto": 6 * ESCALA,
+        "ancho": 9.6 * config.ESCALA,
+        "alto": 6 * config.ESCALA,
         "angulo_giro": 0.0,
         "ang_correccion": 0.0,
         "aporte_angular": 0.0,
-        "centro_local": pygame.Vector2(4.8 * ESCALA, 3 * ESCALA),
+        "centro_local": pygame.Vector2(4.8 * config.ESCALA, 3 * config.ESCALA),
         # Entrada en el lateral izquierdo unificado
         "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
         # Salida recta pura exactamente a 9.6 unidades de distancia física
-        "sal_local_C": pygame.Vector2(9.6 * ESCALA, 0.0),
-        "sal_local_D": pygame.Vector2(9.6 * ESCALA, 6 * ESCALA),
+        "sal_local_C": pygame.Vector2(9.6 * config.ESCALA, 0.0),
+        "sal_local_D": pygame.Vector2(9.6 * config.ESCALA, 6 * config.ESCALA),
     },
     "RTD": {
         "superficie": surf_rtd_gt,
@@ -355,10 +356,10 @@ CATALOGO_PIEZAS = {
         "ang_correccion": -90.0,
         "aporte_angular": 180.0,
         "centro_local": pygame.Vector2(400.0, 400.0),
-        "ent_local_A": pygame.Vector2(400.0 - (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
-        "ent_local_B": pygame.Vector2(400.0 + (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
-        "sal_local_C": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * 1 - 18.0 * ESCALA + 6.0 * ESCALA, 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
-        "sal_local_D": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * 1 - 18.0 * ESCALA, 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+        "ent_local_A": pygame.Vector2(400.0 - (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
+        "ent_local_B": pygame.Vector2(400.0 + (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
+        "sal_local_C": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * 1 - 18.0 * config.ESCALA + 6.0 * config.ESCALA, 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
+        "sal_local_D": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * 1 - 18.0 * config.ESCALA, 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
     },
     "SCI": {
         "ancho": 800,
@@ -368,10 +369,10 @@ CATALOGO_PIEZAS = {
         "ang_correccion": -90.0,
         "aporte_angular": 180.0,
         "centro_local": pygame.Vector2(400.0, 400.0),
-        "ent_local_A": pygame.Vector2(400.0 - (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
-        "ent_local_B": pygame.Vector2(400.0 + (6.0 * ESCALA) / 2.0, 400.0 + 150.0),
-        "sal_local_C": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * (-1) - 18.0 * ESCALA * (-1), 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
-        "sal_local_D": pygame.Vector2(400.0 + (6.0 * ESCALA / 2.0) * (-1) - 18.0 * ESCALA * (-1) + 6.0 * ESCALA * (-1), 400.0 + 150.0 - 10.5 * ESCALA + 6.0 * ESCALA),
+        "ent_local_A": pygame.Vector2(400.0 - (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
+        "ent_local_B": pygame.Vector2(400.0 + (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
+        "sal_local_C": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * (-1) - 18.0 * config.ESCALA * (-1), 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
+        "sal_local_D": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * (-1) - 18.0 * config.ESCALA * (-1) + 6.0 * config.ESCALA * (-1), 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
     },
 
 
@@ -385,56 +386,56 @@ CATALOGO_PIEZAS = {
 # ////////////////////////////////////////////////////////////
 
     "CD90": {
-        "ancho": 8 * ESCALA,
-        "alto": 8 * ESCALA,
+        "ancho": 8 * config.ESCALA,
+        "alto": 8 * config.ESCALA,
         "angulo_giro": -90,
         "ang_correccion": 0.0,
         "aporte_angular": -90.0,
-        "centro_local": pygame.Vector2(4 * ESCALA, 4 * ESCALA),
+        "centro_local": pygame.Vector2(4 * config.ESCALA, 4 * config.ESCALA),
         "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
-        "sal_local_C": pygame.Vector2(8 * ESCALA, 8 * ESCALA),
-        "sal_local_D": pygame.Vector2(2 * ESCALA, 8 * ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
+        "sal_local_C": pygame.Vector2(8 * config.ESCALA, 8 * config.ESCALA),
+        "sal_local_D": pygame.Vector2(2 * config.ESCALA, 8 * config.ESCALA),
     },
     "CI90": {
-        "ancho": 8 * ESCALA,
-        "alto": 8 * ESCALA,
+        "ancho": 8 * config.ESCALA,
+        "alto": 8 * config.ESCALA,
         "angulo_giro": 90,
         "ang_correccion": 0.0,
         "aporte_angular": 90.0,
-        "centro_local": pygame.Vector2(4 * ESCALA, 4 * ESCALA),
+        "centro_local": pygame.Vector2(4 * config.ESCALA, 4 * config.ESCALA),
         # CORRECCIÓN DE QUIRALIDAD: Entrada en el flanco inferior izquierdo del lienzo
-        "ent_local_A": pygame.Vector2(0.0, 2 * ESCALA),
-        "ent_local_B": pygame.Vector2(0.0, 8 * ESCALA),
+        "ent_local_A": pygame.Vector2(0.0, 2 * config.ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 8 * config.ESCALA),
         # Salida pura orientada al norte: C es exterior (8), D es interior amarillo (2) en y=0
-        "sal_local_C": pygame.Vector2(8 * ESCALA, 0.0),
-        "sal_local_D": pygame.Vector2(2 * ESCALA, 0.0),
+        "sal_local_C": pygame.Vector2(8 * config.ESCALA, 0.0),
+        "sal_local_D": pygame.Vector2(2 * config.ESCALA, 0.0),
     },
     "CD45": {
-        "ancho": 12 * ESCALA,
-        "alto": 12 * ESCALA,
+        "ancho": 12 * config.ESCALA,
+        "alto": 12 * config.ESCALA,
         "angulo_giro": -45,
         "ang_correccion": 0.0,
         "aporte_angular": -45.0,
-        "centro_local": pygame.Vector2(6 * ESCALA, 6 * ESCALA),
+        "centro_local": pygame.Vector2(6 * config.ESCALA, 6 * config.ESCALA),
         "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * ESCALA),
-        "sal_local_C": pygame.Vector2(12 * ESCALA * 0.70710678, 12 * ESCALA * (1.0 - 0.70710678)),
-        "sal_local_D": pygame.Vector2(6 * ESCALA * 0.70710678, (12.0 - 6.0 * 0.70710678) * ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
+        "sal_local_C": pygame.Vector2(12 * config.ESCALA * 0.70710678, 12 * config.ESCALA * (1.0 - 0.70710678)),
+        "sal_local_D": pygame.Vector2(6 * config.ESCALA * 0.70710678, (12.0 - 6.0 * 0.70710678) * config.ESCALA),
     },
     "CI45": {
-        "ancho": 12 * ESCALA,
-        "alto": 12 * ESCALA,
+        "ancho": 12 * config.ESCALA,
+        "alto": 12 * config.ESCALA,
         "angulo_giro": 45,
         "ang_correccion": 0.0,
         "aporte_angular": 45.0,
-        "centro_local": pygame.Vector2(6 * ESCALA, 6 * ESCALA),
+        "centro_local": pygame.Vector2(6 * config.ESCALA, 6 * config.ESCALA),
         # CORRECCIÓN DE QUIRALIDAD: Entrada alineada en la banda inferior de la calzada de 12
-        "ent_local_A": pygame.Vector2(0.0, 6 * ESCALA),
-        "ent_local_B": pygame.Vector2(0.0, 12 * ESCALA),
-        # Salida proyectada de forma estricta desde el centro inferior (0, 12 * ESCALA) hacia arriba
-        "sal_local_C": pygame.Vector2(12 * ESCALA * 0.70710678, 12 * ESCALA * 0.70710678),
-        "sal_local_D": pygame.Vector2(6 * ESCALA * 0.70710678, 6 * ESCALA * 0.70710678),
+        "ent_local_A": pygame.Vector2(0.0, 6 * config.ESCALA),
+        "ent_local_B": pygame.Vector2(0.0, 12 * config.ESCALA),
+        # Salida proyectada de forma estricta desde el centro inferior (0, 12 * config.ESCALA) hacia arriba
+        "sal_local_C": pygame.Vector2(12 * config.ESCALA * 0.70710678, 12 * config.ESCALA * 0.70710678),
+        "sal_local_D": pygame.Vector2(6 * config.ESCALA * 0.70710678, 6 * config.ESCALA * 0.70710678),
     },
 
 # ////////////////////////////////////////////////////////////
@@ -500,25 +501,25 @@ angulo_carrera_actual = ANGULO_INICIAL
 cfg_rc = CATALOGO_PIEZAS["RC"]
 surf_rc_local = pygame.Surface((int(cfg_rc["ancho"]), int(cfg_rc["alto"])), pygame.SRCALPHA)
 
-l_corta = 9.6 * ESCALA
-ancho_via_local = 6 * ESCALA
+l_corta = 9.6 * config.ESCALA
+ancho_via_local = 6 * config.ESCALA
 
 # Líneas perimetrales (Regla de Oro: derecha es Amarilla)
-pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, 0), (l_corta, 0), GROSOR_LINEA)
-pygame.draw.line(surf_rc_local, AMARILLO_DERECHO, (0, ancho_via_local), (l_corta, ancho_via_local), GROSOR_LINEA + 1)
+pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, 0), (l_corta, 0), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, config.AMARILLO_DERECHO, (0, ancho_via_local), (l_corta, ancho_via_local), GROSOR_LINEA + 1)
 
 # Bocas de cierre de la loseta de cartón
-pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, 0), (0, ancho_via_local), GROSOR_LINEA)
-pygame.draw.line(surf_rc_local, GRIS_LINEAS, (l_corta, 0), (l_corta, ancho_via_local), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, 0), (0, ancho_via_local), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (l_corta, 0), (l_corta, ancho_via_local), GROSOR_LINEA)
 
 # Línea central divisoria de carriles
-pygame.draw.line(surf_rc_local, GRIS_LINEAS, (0, ancho_via_local // 2), (l_corta, ancho_via_local // 2), GROSOR_LINEA)
+pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, ancho_via_local // 2), (l_corta, ancho_via_local // 2), GROSOR_LINEA)
 
 # 2 travesaños internos para formar exactamente las 3 casillas reales de carrera (3.2 unidades cada una)
 ancho_casilla_rc = l_corta / 3.0
 for i in range(1, 3):
     x_t = i * ancho_casilla_rc
-    pygame.draw.line(surf_rc_local, GRIS_LINEAS, (x_t, 0), (x_t, ancho_via_local), GROSOR_LINEA)
+    pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (x_t, 0), (x_t, ancho_via_local), GROSOR_LINEA)
 
 # Guardar la superficie e inyectar el promedio de enganche en el motor
 CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
@@ -532,7 +533,7 @@ for mano_cod in ["SCD", "SCI"]:
     letra_mano = "D" if mano_cod == "SCD" else "I"
     
     # CORRECCIÓN: Se sustituye TAM_SURF por el valor literal 800 píxeles exigido por el lienzo
-    surf_fabricada = dibujar_sharp_corners(letra_mano, ESCALA, GROSOR_LINEA, 800, GRIS_LINEAS, AMARILLO_DERECHO)
+    surf_fabricada = dibujar_sharp_corners(letra_mano, config.ESCALA, GROSOR_LINEA, 800, config.GRIS_LINEAS, config.AMARILLO_DERECHO)
     
     # Inyectar la superficie y calcular el promedio de entrada exigido por el motor rígido
     CATALOGO_PIEZAS[mano_cod]["superficie"] = surf_fabricada
@@ -560,8 +561,8 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     
     es_90 = '90' in codigo
     es_izq = 'I' in codigo
-    r_int = 2 * ESCALA if es_90 else 6 * ESCALA
-    r_ext = 8 * ESCALA if es_90 else 12 * ESCALA
+    r_int = 2 * config.ESCALA if es_90 else 6 * config.ESCALA
+    r_ext = 8 * config.ESCALA if es_90 else 12 * config.ESCALA
     angulo_giro = 90 if es_90 else 45
 
     # Configuración de centros de arco locales según quiralidad
@@ -582,12 +583,12 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
 
     # Dibujo de líneas perimetrales (Regla de Oro: Derecha en la marcha siempre Amarilla)
     if len(puntos_ext) >= 2:
-        pygame.draw.lines(surf_local, AMARILLO_DERECHO if es_izq else GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA + 1 if es_izq else GROSOR_LINEA)
-        pygame.draw.lines(surf_local, GRIS_LINEAS if es_izq else AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA if es_izq else GROSOR_LINEA + 1)
+        pygame.draw.lines(surf_local, config.AMARILLO_DERECHO if es_izq else config.GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA + 1 if es_izq else GROSOR_LINEA)
+        pygame.draw.lines(surf_local, config.GRIS_LINEAS if es_izq else config.AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA if es_izq else GROSOR_LINEA + 1)
 
     # Bocas de entrada y salida (Líneas de cierre estancas)
-    pygame.draw.line(surf_local, GRIS_LINEAS, puntos_ext[0], puntos_int[0], GROSOR_LINEA)
-    pygame.draw.line(surf_local, GRIS_LINEAS, puntos_ext[-1], puntos_int[-1], GROSOR_LINEA)
+    pygame.draw.line(surf_local, config.GRIS_LINEAS, puntos_ext[0], puntos_int[0], GROSOR_LINEA)
+    pygame.draw.line(surf_local, config.GRIS_LINEAS, puntos_ext[-1], puntos_int[-1], GROSOR_LINEA)
 
     # Línea central transmedia en curva
     r_med = (r_int + r_ext) / 2.0
@@ -596,12 +597,12 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
         rad = math.radians(grado)
         puntos_centro.append((cx_arco + r_med * math.cos(rad), cy_arco - r_med * math.sin(rad)))
     if len(puntos_centro) >= 2:
-        pygame.draw.lines(surf_local, GRIS_LINEAS, False, puntos_centro, GROSOR_LINEA)
+        pygame.draw.lines(surf_local, config.GRIS_LINEAS, False, puntos_centro, GROSOR_LINEA)
 
     # Travesaño intermedio angular para dividir las casillas
     grado_medio = ang_i + (angulo_giro / 2.0)
     rad_m = math.radians(grado_medio)
-    pygame.draw.line(surf_local, GRIS_LINEAS, 
+    pygame.draw.line(surf_local, config.GRIS_LINEAS, 
                      (cx_arco + r_int * math.cos(rad_m), cy_arco - r_int * math.sin(rad_m)), 
                      (cx_arco + r_ext * math.cos(rad_m), cy_arco - r_ext * math.sin(rad_m)), GROSOR_LINEA)
 
@@ -676,7 +677,7 @@ if piezas_calculadas:
     puntos_y = [pieza["rect"].centery for pieza in piezas_calculadas]
     
     # Margen de protección física ceñido para que las curvas anchas no se recorten en los bordes
-    margen_loseta = 15.0 * ESCALA 
+    margen_loseta = 15.0 * config.ESCALA 
     
     min_x = min(puntos_x) - margen_loseta
     max_x = max(puntos_x) + margen_loseta
@@ -687,18 +688,18 @@ if piezas_calculadas:
     alto_pista = max_y - min_y if (max_y - min_y) > 0 else 1.0
     
     # Imponer el 5% de margen lateral mínimo por cada lado (90% de pantalla útil total)
-    escala_x = (WIDTH * 0.90) / ancho_pista
-    escala_y = (HEIGHT * 0.90) / alto_pista
+    escala_x = (config.WIDTH * 0.90) / ancho_pista
+    escala_y = (config.HEIGHT * 0.90) / alto_pista
     FACTOR_CAMARA = min(escala_x, escala_y)
     
     centro_pista = pygame.Vector2((min_x + max_x) / 2.0, (min_y + max_y) / 2.0)
-    centro_pantalla = pygame.Vector2(WIDTH / 2.0, HEIGHT / 2.0)
+    centro_pantalla = pygame.Vector2(config.WIDTH / 2.0, config.HEIGHT / 2.0)
 
 # ////////////////////////////////////////////////////////////
 
 # --- EXPORTACIÓN AUTOMÁTICA A PNG INCREMENTAL ---
-superficie_export = pygame.Surface((WIDTH, HEIGHT))
-superficie_export.fill(COLOR_FONDO)
+superficie_export = pygame.Surface((config.WIDTH, config.HEIGHT))
+superficie_export.fill(config.COLOR_FONDO)
 
 for idx, pieza in enumerate(piezas_calculadas):
     w_original, h_original = pieza["superficie"].get_size()
@@ -711,7 +712,7 @@ for idx, pieza in enumerate(piezas_calculadas):
     
     p_C_camara = centro_pantalla + (pieza["sal_C"] - centro_pista) * FACTOR_CAMARA
     p_D_camara = centro_pantalla + (pieza["sal_D"] - centro_pista) * FACTOR_CAMARA
-    pygame.draw.line(superficie_export, GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
+    pygame.draw.line(superficie_export, config.GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
     
     if idx == 0 and len(despieze) > 0:
         cfg_primera = CATALOGO_PIEZAS[despieze[0]]
@@ -721,7 +722,7 @@ for idx, pieza in enumerate(piezas_calculadas):
         p_ent_B_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
         p_A_camara = centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA
         p_B_camara = centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA
-        pygame.draw.line(superficie_export, GRIS_LINEAS, p_A_camara, p_B_camara, GROSOR_DECORATIVO)
+        pygame.draw.line(superficie_export, config.GRIS_LINEAS, p_A_camara, p_B_camara, GROSOR_DECORATIVO)
 
 nombre_script = "Arc17_Jauja_remejorado"
 contador = 1
@@ -749,7 +750,7 @@ while running:
         running = False
         break
 
-    screen.fill(COLOR_FONDO)
+    screen.fill(config.COLOR_FONDO)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
@@ -775,7 +776,7 @@ while running:
             
             p_C_camara = centro_pantalla + (pieza["sal_C"] - centro_pista) * FACTOR_CAMARA
             p_D_camara = centro_pantalla + (pieza["sal_D"] - centro_pista) * FACTOR_CAMARA
-            pygame.draw.line(screen, GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
+            pygame.draw.line(screen, config.GRIS_LINEAS, p_C_camara, p_D_camara, GROSOR_DECORATIVO)
 
             if idx == 0 and len(despieze) > 0:
                 cfg_primera = CATALOGO_PIEZAS[despieze[0]]
@@ -783,15 +784,16 @@ while running:
                 centro_m1 = pygame.Vector2(pieza["rect"].center)
                 p_ent_A_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
                 p_ent_B_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
-                pygame.draw.line(screen, GRIS_LINEAS, centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA, centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA, GROSOR_DECORATIVO)
+                pygame.draw.line(screen, config.GRIS_LINEAS, centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA, centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA, GROSOR_DECORATIVO)
 
-            pygame.draw.circle(screen, ROSA, (int(p_C_camara.x), int(p_C_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
-            pygame.draw.circle(screen, ROJO, (int(p_D_camara.x), int(p_D_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
+            #Debug
+            #pygame.draw.circle(screen, config.ROSA, (int(p_C_camara.x), int(p_C_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
+            #pygame.draw.circle(screen, config.ROJO, (int(p_D_camara.x), int(p_D_camara.y)), int(max(3, 5 * FACTOR_CAMARA)))
 
     # --- TEXTO INFORMATIVO DE PRESENTACIÓN ---
     font = pygame.font.SysFont(None, 22)
     txt_info = f"Paso: {paso_actual}/{len(piezas_calculadas)} | String: '{cadena_entrada}' | Archivo: {nombre_archivo_final}"
-    txt = font.render(txt_info, True, COLOR_LINEA)
+    txt = font.render(txt_info, True, config.COLOR_LINEA)
     screen.blit(txt, (20, 20))
     
     pygame.display.flip()
