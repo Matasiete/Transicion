@@ -34,7 +34,7 @@ ANCHO_VIA = 6 * config.ESCALA
 GROSOR_LINEA = 2         
 GROSOR_DECORATIVO = 1    
 GROSOR_AMARILLO = 3      
-ANGULO_INICIAL = 0         
+ANGULO_INICIAL = 90    
 # Dimensiones reales físicas de la Recta Corta (RC)
 ANCHO_RC_REAL = int(9.6 * config.ESCALA)
 ALTO_RC_REAL = int(6 * config.ESCALA)
@@ -512,7 +512,12 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     eje_entrada_local = (cfg["ent_local_A"] + cfg["ent_local_B"]) / 2.0
     v_ent_rotado = rotar_punto_local(eje_entrada_local, cfg["centro_local"], angulo_render)
     centro_mundo = eje_conexion_mundo - v_ent_rotado
-    rect_pieza.center = (int(centro_mundo.x), int(centro_mundo.y))
+    
+    
+    #rect_pieza.center = (int(centro_mundo.x), int(centro_mundo.y))
+    # CORRECCIÓN: Usamos round() antes de int() para evitar el desplazamiento por truncamiento
+    rect_pieza.center = (int(round(centro_mundo.x)), int(round(centro_mundo.y)))
+    
     
     mundo_sal_C = centro_mundo + rotar_punto_local(cfg["sal_local_C"], cfg["centro_local"], angulo_render)
     mundo_sal_D = centro_mundo + rotar_punto_local(cfg["sal_local_D"], cfg["centro_local"], angulo_render)
@@ -521,7 +526,10 @@ def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
     return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
 
 # --- PROCESAMIENTO DINÁMICO DE LA PISTA ---
-cadena_entrada = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
+#cadena_entrada = "R, CD90, CD90, R, RTI, RC, R"
+#cadena_entrada = "R, CD90, CD90, CD90, RC, R"
+#cadena_entrada = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
+cadena_entrada = "R, RC, R, CD90, RC, RC, CI45, RC"
 despieze = [token.strip().upper() for token in cadena_entrada.split(",") if token.strip()]
 
 punto_conexion_actual = pygame.Vector2(450, 550)
@@ -558,6 +566,7 @@ for i in range(1, 3):
 CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
 CATALOGO_PIEZAS["RC"]["promedio_entrada_local"] = (cfg_rc["ent_local_A"] + cfg_rc["ent_local_B"]) / 2.0
 
+
 # ////////////////////////////////////////////////////////////
 
 # --- INVOCACIÓN GRÁFICA DIRECTA DE TU FUNCIÓN NATIVA PARA CALLEJONES (SCD / SCI) ---
@@ -576,14 +585,8 @@ for mano_cod in ["SCD", "SCI"]:
 
 piezas_calculadas = []
 
-# ////////////////////////////////////////////////////////////
-# --- ANTES (LÍNEAS QUE NO CAMBIAN) ---
-#         cfg["promedio_entrada_local"] = (v_ent_A + v_ent_B) / 2.0
-# 
-# piezas_calculadas = []
-# ////////////////////////////////////////////////////////////
-
 # --- BLOQUE 2: FABRICACIÓN GRÁFICA DE SUPERFICIES PARA CURVAS ESTÁNDAR ---
+# CORRECCIÓN DEFINITIVA: Unificación de grosores y calibración de centros de arco
 for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     cfg = CATALOGO_PIEZAS[codigo]
     ancho_local = int(cfg["ancho"])
@@ -614,10 +617,10 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
         puntos_ext.append((cx_arco + r_ext * math.cos(rad), cy_arco - r_ext * math.sin(rad)))
         puntos_int.append((cx_arco + r_int * math.cos(rad), cy_arco - r_int * math.sin(rad)))
 
-    # Dibujo de líneas perimetrales (Regla de Oro: Derecha en la marcha siempre Amarilla)
+    # Dibujo de líneas perimetrales (Unificado a GROSOR_LINEA estricto para evitar gaps)
     if len(puntos_ext) >= 2:
-        pygame.draw.lines(surf_local, config.AMARILLO_DERECHO if es_izq else config.GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA + 1 if es_izq else GROSOR_LINEA)
-        pygame.draw.lines(surf_local, config.GRIS_LINEAS if es_izq else config.AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA if es_izq else GROSOR_LINEA + 1)
+        pygame.draw.lines(surf_local, config.AMARILLO_DERECHO if es_izq else config.GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA)
+        pygame.draw.lines(surf_local, config.GRIS_LINEAS if es_izq else config.AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA)
 
     # Bocas de entrada y salida (Líneas de cierre estancas)
     pygame.draw.line(surf_local, config.GRIS_LINEAS, puntos_ext[0], puntos_int[0], GROSOR_LINEA)
@@ -644,11 +647,6 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     CATALOGO_PIEZAS[codigo]["promedio_entrada_local"] = (cfg["ent_local_A"] + cfg["ent_local_B"]) / 2.0
 
 # ////////////////////////////////////////////////////////////
-# --- DESPUÉS (LÍNEAS QUE NO CAMBIAN) ---
-# for tipo in despieze:
-#     resultado = procesar_y_conectar_pieza(tipo, punto_conexion_actual, angulo_carrera_actual)
-# ////////////////////////////////////////////////////////////
-
 
 for tipo in despieze:
     resultado = procesar_y_conectar_pieza(tipo, punto_conexion_actual, angulo_carrera_actual)
@@ -662,6 +660,11 @@ for tipo in despieze:
         })
         punto_conexion_actual = (sal_C + sal_D) / 2.0
         angulo_carrera_actual = siguiente_angulo
+
+
+
+
+
 
         #Debug
         # Inserta esto justo después de calcular el punto_conexion_actual en tu bucle de despiece
