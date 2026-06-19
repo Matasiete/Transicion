@@ -190,11 +190,7 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
     cy = y_origen - l_brazo_largo - math.sqrt(r_ext**2 - (ancho_pieza / 2.0)**2)
     desfase_c = ancho_pieza / 2.0
 
-    cx_corto = cx - (2.15 * escala) * s
-    cy_corto = cy + (2.15 * escala)
 
-    rad_desvio = math.asin((ancho_pieza / 2.0) / r_ext)
-    grado_desvio = math.degrees(rad_desvio)
 
     x_ext_in = cx + desfase_c * s
     x_int_in = cx - desfase_c * s
@@ -229,14 +225,7 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
 
     # 1. Tramos de Entrada (Verticales): Entrada Abierta
     pygame.draw.line(surf_canvas, color_ext, (x_ext_in, y_base_in), (x_ext_in, y_junta_entrada),
-                     GROSOR_AMARILLO if mano == "D" else GROSOR_LINEA)
-    pygame.draw.line(surf_canvas, color_int, (x_int_in, y_base_in), (x_int_in, y_junta_entrada),
-                     GROSOR_DECORATIVO)  # interior siempre decorativo
-    # ❌ ENTRADA ABIERTA: Hemos borrado la línea que unía (x_ext_in, y_base_in) con (x_int_in, y_base_in)
-
-    # 2. Tramos de Salida (Horizontales): Salida Cerrada
-    pygame.draw.line(surf_canvas, color_ext, (x_junta_rotonda_out, y_ext_out), (xc_C, y_ext_out),
-                     GROSOR_AMARILLO if mano == "I" else GROSOR_LINEA)
+  
     pygame.draw.line(surf_canvas, color_int, (x_junta_rotonda_out, y_int_out), (xc_C, y_int_out),
                      GROSOR_DECORATIVO)  # interior siempre decorativo
     
@@ -283,18 +272,7 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
 # DRAWER DIBUJAR SHARP CORNERS
 # =============================================================================
 def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
-    surf_local = pygame.Surface((tam_surf, tam_surf), pygame.SRCALPHA)
-    
-    if mano == "I":
-        s = -1
-        color_ext = gris
-        color_int = amarillo
-    else:
-        s = 1
-        color_ext = amarillo
-        color_int = gris
-
-    x_X = tam_surf // 2
+    2
     y_X = tam_surf // 2 + 150
     calzada = 6.0 * escala
     techo_total = 18.0 * escala
@@ -303,12 +281,7 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
     ancho_hueco = 6.0 * escala
     prof_hueco = 2.0 * escala 
 
-    x_der_ext = x_X + (calzada / 2.0) * s
-    x_der_int = x_X - (calzada / 2.0) * s
-    y_base_der = y_X
-    y_techo = y_X - alto_der
-    x_izq_ext = x_der_ext - techo_total * s
-    x_izq_int = x_izq_ext + calzada * s
+ zada * s
     y_base_izq = y_techo + alto_izq
     x_hueco_der = x_der_int
     y_hueco_fondo = y_techo + (alto_der - prof_hueco) - calzada
@@ -328,12 +301,7 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
 
     # Tapas de extremos
     pygame.draw.line(surf_local, gris, (x_izq_ext, y_base_izq), (x_izq_int, y_base_izq), grosor_linea) 
-    pygame.draw.line(surf_local, gris, (x_der_ext, y_base_der), (x_der_int, y_base_der), grosor_linea) 
-
-    # Estructura Interna
-    y_division_entrada = y_base_der - (alto_der - (y_hueco_fondo - y_techo)) / 2.0
-    x_eje_salida = x_izq_ext + (calzada / 2.0) * s
-    top_int_izq = (y_hueco_fondo + prof_hueco) - 10
+ prof_hueco) - 10
     
     # Casillero horizontal lado largo
     pygame.draw.line(surf_local, gris, (x_der_ext, y_division_entrada), (x_der_int, y_division_entrada), grosor_linea)
@@ -451,15 +419,7 @@ pygame.draw.line(surf_rc_local, config.AMARILLO_DERECHO, (0, ancho_via_local), (
 pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, 0), (0, ancho_via_local), GROSOR_LINEA)
 pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (l_corta, 0), (l_corta, ancho_via_local), GROSOR_LINEA)
 
-# Línea central divisoria de carriles
-pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, ancho_via_local // 2), (l_corta, ancho_via_local // 2), GROSOR_LINEA)
-
-# 2 travesaños internos para formar exactamente las 3 casillas reales de carrera (3.2 unidades cada una)
-ancho_casilla_rc = l_corta / 3.0
-for i in range(1, 3):
-    x_t = i * ancho_casilla_rc
-    pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (x_t, 0), (x_t, ancho_via_local), GROSOR_LINEA)
-
+# Línea 
 # Guardar la superficie e inyectar el promedio de enganche en el motor
 CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
 CATALOGO_PIEZAS["RC"]["promedio_entrada_local"] = (cfg_rc["ent_local_A"] + cfg_rc["ent_local_B"]) / 2.0
@@ -491,9 +451,7 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     alto_local = int(cfg["alto"])
     
     # Crear la superficie local transparente
-    surf_local = pygame.Surface((ancho_local, alto_local), pygame.SRCALPHA)
-    
-    es_90 = '90' in codigo
+  
     es_izq = 'I' in codigo
     r_int = 2 * config.ESCALA if es_90 else 6 * config.ESCALA
     r_ext = 8 * config.ESCALA if es_90 else 12 * config.ESCALA
@@ -514,8 +472,7 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
         rad = math.radians(grado)
         puntos_ext.append((cx_arco + r_ext * math.cos(rad), cy_arco - r_ext * math.sin(rad)))
         puntos_int.append((cx_arco + r_int * math.cos(rad), cy_arco - r_int * math.sin(rad)))
-
-    # Dibujo de líneas perimetrales (Unificado a GROSOR_LINEA estricto para evitar gaps)
+nificado a GROSOR_LINEA estricto para evitar gaps)
     if len(puntos_ext) >= 2:
         pygame.draw.lines(surf_local, config.AMARILLO_DERECHO if es_izq else config.GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA)
         pygame.draw.lines(surf_local, config.GRIS_LINEAS if es_izq else config.AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA)
