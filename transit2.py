@@ -35,7 +35,9 @@ GROSOR_LINEA = 2
 GROSOR_DECORATIVO = 1    
 GROSOR_AMARILLO = 3      
 ANGULO_INICIAL = 0         
-
+# Dimensiones reales físicas de la Recta Corta (RC)
+ANCHO_RC_REAL = int(9.6 * config.ESCALA)
+ALTO_RC_REAL = int(6 * config.ESCALA)
 
 
 ## ============================================================
@@ -193,7 +195,7 @@ ex_rtd, ey_rtd, sx_rtd, sy_rtd = enganche_rtd["entrada_x"], enganche_rtd["entrad
 ex_rti, ey_rti, sx_rti, sy_rti = enganche_rti["entrada_x"], enganche_rti["entrada_y"], enganche_rti["salida_x"], enganche_rti["salida_y"]
 
 
-
+surf_rc_real = pygame.Surface((ANCHO_RC_REAL, ALTO_RC_REAL), pygame.SRCALPHA)
 
 
 # --- DICCIONARIO DE CONFIGURACIÓN DE PIEZAS (Variables Complejas) ---
@@ -212,7 +214,7 @@ CATALOGO_PIEZAS = {
         "aporte_angular": 0.0    
     },
     "RC": {
-        "superficie": pygame.Surface((int(ancho_rc), int(alto_rc)), pygame.SRCALPHA),
+        "superficie": surf_rc_real,
         "ancho": 9.6 * config.ESCALA,
         "alto": 6 * config.ESCALA,
         "angulo_giro": 0.0,
@@ -660,6 +662,10 @@ for tipo in despieze:
         })
         punto_conexion_actual = (sal_C + sal_D) / 2.0
         angulo_carrera_actual = siguiente_angulo
+
+        #Debug
+        # Inserta esto justo después de calcular el punto_conexion_actual en tu bucle de despiece
+        print(f"Pieza: {tipo:5} | Conexión global entrante: X={punto_conexion_actual.x:.4f}, Y={punto_conexion_actual.y:.4f}")
 
 # =========================================================================
 # --- CÁLCULO DE CAJA CONTENEDORA Y MATRIZ DE VISUALIZACIÓN (CORREGIDO) ---
