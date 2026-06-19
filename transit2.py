@@ -9,13 +9,16 @@ Created on Tue Jun 17 15:24:59 2026
 Arcs021 provisional
 """
 
+# 0. IMPORTACIONES EXTERNAS
+
 import pygame
 import sys
 import math
 import os
 
-# 1. IMPORTACIÓN PRIMERO
+# 1. IMPORTACIÓNES INTERNAS
 import config
+import catalog
 
 ### ============================================================================
 ###### Inicialización del entorno
@@ -372,141 +375,18 @@ ex_rti, ey_rti, sx_rti, sy_rti = enganche_rti["entrada_x"], enganche_rti["entrad
 surf_rc_real = pygame.Surface((ANCHO_RC_REAL, ALTO_RC_REAL), pygame.SRCALPHA)
 
 
+
 # =============================================================================
-# =========================   DICCIONARIO   ===================================
+# ========================= DICCIONARIO INTERNO (CARGA EXTERNA) ===============
+# ::::::::::::::::::::::::: DESDE MODULO INTERNO ::::::::::::::::::::::::::::::
 # =============================================================================
 
-# --- DICCIONARIO DE CONFIGURACIÓN DE PIEZAS (Variables Complejas) ---
-CATALOGO_PIEZAS = {
-    "R": {
-        "superficie": surf_recta,
-        "ancho": 19 * config.ESCALA,
-        "alto": 6 * config.ESCALA,
-        "angulo_giro": 0.0,
-        "centro_local": pygame.Vector2(LARGO_RECTA / 2.0, ANCHO_VIA / 2.0),
-        "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, ANCHO_VIA),
-        "sal_local_C": pygame.Vector2(LARGO_RECTA, 0.0),
-        "sal_local_D": pygame.Vector2(LARGO_RECTA, ANCHO_VIA),
-        "ang_correccion": 0.0,   
-        "aporte_angular": 0.0    
-    },
-    "RC": {
-        "superficie": surf_rc_real,
-        "ancho": 9.6 * config.ESCALA,
-        "alto": 6 * config.ESCALA,
-        "angulo_giro": 0.0,
-        "centro_local": pygame.Vector2(4.8 * config.ESCALA, 3 * config.ESCALA),
-        # Entrada en el lateral izquierdo unificado
-        "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
-        # Salida recta pura exactamente a 9.6 unidades de distancia física
-        "sal_local_C": pygame.Vector2(9.6 * config.ESCALA, 0.0),
-        "sal_local_D": pygame.Vector2(9.6 * config.ESCALA, 6 * config.ESCALA),
-        "ang_correccion": 0.0,
-        "aporte_angular": 0.0,
-    },
-    "RTD": {
-        "superficie": surf_rtd_gt,
-        "centro_local": pygame.Vector2(w_rtd / 2.0, h_rtd / 2.0),
-        "ent_local_A": pygame.Vector2(ex_rtd - ANCHO_VIA / 2.0, ey_rtd),
-        "ent_local_B": pygame.Vector2(ex_rtd + ANCHO_VIA / 2.0, ey_rtd),
-        "sal_local_C": pygame.Vector2(sx_rtd, sy_rtd + ANCHO_VIA / 2.0),
-        "sal_local_D": pygame.Vector2(sx_rtd, sy_rtd - ANCHO_VIA / 2.0),
-        "ang_correccion": -90.0, 
-        "aporte_angular": 90.0   
-    },
-    "RTI": {
-        "superficie": surf_rti_gt,
-        "centro_local": pygame.Vector2(w_rti / 2.0, h_rti / 2.0),
-        "ent_local_A": pygame.Vector2(ex_rti - ANCHO_VIA / 2.0, ey_rti),
-        "ent_local_B": pygame.Vector2(ex_rti + ANCHO_VIA / 2.0, ey_rti),
-        "sal_local_C": pygame.Vector2(sx_rti, sy_rti - ANCHO_VIA / 2.0),
-        "sal_local_D": pygame.Vector2(sx_rti, sy_rti + ANCHO_VIA / 2.0),
-        "ang_correccion": -90.0, 
-        "aporte_angular": -90.0  
-    },
-    "SCD": {
-        "ancho": 800,
-        "alto": 800,
-        "angulo_giro": 180.0,
-        # CORRECCIÓN: Resta los 90 grados de desviación del molde vertical para alinearlo al eje horizontal Este
-        "ang_correccion": -90.0,
-        "aporte_angular": 180.0,
-        "centro_local": pygame.Vector2(400.0, 400.0),
-        "ent_local_A": pygame.Vector2(400.0 - (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
-        "ent_local_B": pygame.Vector2(400.0 + (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
-        "sal_local_C": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * 1 - 18.0 * config.ESCALA + 6.0 * config.ESCALA, 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
-        "sal_local_D": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * 1 - 18.0 * config.ESCALA, 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
-    },
-    "SCI": {
-        "ancho": 800,
-        "alto": 800,
-        "angulo_giro": 180.0,
-        # CORRECCIÓN: Ajusta los 90 grados de desviación del molde vertical para alinearlo al eje horizontal Este
-        "ang_correccion": -90.0,
-        "aporte_angular": 180.0,
-        "centro_local": pygame.Vector2(400.0, 400.0),
-        "ent_local_A": pygame.Vector2(400.0 - (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
-        "ent_local_B": pygame.Vector2(400.0 + (6.0 * config.ESCALA) / 2.0, 400.0 + 150.0),
-        "sal_local_C": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * (-1) - 18.0 * config.ESCALA * (-1), 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
-        "sal_local_D": pygame.Vector2(400.0 + (6.0 * config.ESCALA / 2.0) * (-1) - 18.0 * config.ESCALA * (-1) + 6.0 * config.ESCALA * (-1), 400.0 + 150.0 - 10.5 * config.ESCALA + 6.0 * config.ESCALA),
-    },
-    "CD90": {
-        "ancho": 8 * config.ESCALA,
-        "alto": 8 * config.ESCALA,
-        "angulo_giro": -90,
-        "ang_correccion": 0.0,
-        "aporte_angular": -90.0,
-        "centro_local": pygame.Vector2(4 * config.ESCALA, 4 * config.ESCALA),
-        "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
-        "sal_local_C": pygame.Vector2(8 * config.ESCALA, 8 * config.ESCALA),
-        "sal_local_D": pygame.Vector2(2 * config.ESCALA, 8 * config.ESCALA),
-    },
-    "CI90": {
-        "ancho": 8 * config.ESCALA,
-        "alto": 8 * config.ESCALA,
-        "angulo_giro": 90,
-        "ang_correccion": 0.0,
-        "aporte_angular": 90.0,
-        "centro_local": pygame.Vector2(4 * config.ESCALA, 4 * config.ESCALA),
-        # CORRECCIÓN DE QUIRALIDAD: Entrada en el flanco inferior izquierdo del lienzo
-        "ent_local_A": pygame.Vector2(0.0, 2 * config.ESCALA),
-        "ent_local_B": pygame.Vector2(0.0, 8 * config.ESCALA),
-        # Salida pura orientada al norte: C es exterior (8), D es interior amarillo (2) en y=0
-        "sal_local_C": pygame.Vector2(8 * config.ESCALA, 0.0),
-        "sal_local_D": pygame.Vector2(2 * config.ESCALA, 0.0),
-    },
-    "CD45": {
-        "ancho": 12 * config.ESCALA,
-        "alto": 12 * config.ESCALA,
-        "angulo_giro": -45,
-        "ang_correccion": 0.0,
-        "aporte_angular": -45.0,
-        "centro_local": pygame.Vector2(6 * config.ESCALA, 6 * config.ESCALA),
-        "ent_local_A": pygame.Vector2(0.0, 0.0),
-        "ent_local_B": pygame.Vector2(0.0, 6 * config.ESCALA),
-        "sal_local_C": pygame.Vector2(12 * config.ESCALA * 0.70710678, 12 * config.ESCALA * (1.0 - 0.70710678)),
-        "sal_local_D": pygame.Vector2(6 * config.ESCALA * 0.70710678, (12.0 - 6.0 * 0.70710678) * config.ESCALA),
-    },
-    "CI45": {
-        "ancho": 12 * config.ESCALA,
-        "alto": 12 * config.ESCALA,
-        "angulo_giro": 45,
-        "ang_correccion": 0.0,
-        "aporte_angular": 45.0,
-        "centro_local": pygame.Vector2(6 * config.ESCALA, 6 * config.ESCALA),
-        # CORRECCIÓN DE QUIRALIDAD: Entrada alineada en la banda inferior de la calzada de 12
-        "ent_local_A": pygame.Vector2(0.0, 6 * config.ESCALA),
-        "ent_local_B": pygame.Vector2(0.0, 12 * config.ESCALA),
-        # Salida proyectada de forma estricta desde el centro inferior (0, 12 * config.ESCALA) hacia arriba
-        "sal_local_C": pygame.Vector2(12 * config.ESCALA * 0.70710678, 12 * config.ESCALA * 0.70710678),
-        "sal_local_D": pygame.Vector2(6 * config.ESCALA * 0.70710678, 6 * config.ESCALA * 0.70710678),
-    },
-
-}
-
+# Cargamos el catálogo modularizado pasando las dependencias calculadas previamente
+CATALOGO_PIEZAS = catalog.inicializar_catalogo(
+    surf_recta, surf_rc_real, surf_rtd_gt, surf_rti_gt,
+    w_rtd, h_rtd, ex_rtd, ey_rtd, sx_rtd, sy_rtd,
+    w_rti, h_rti, ex_rti, ey_rti, sx_rti, sy_rti
+)
 
 # =============================================================================
 # ====================   MOLDES DE PIEZAS   ===================================
