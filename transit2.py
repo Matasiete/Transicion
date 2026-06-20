@@ -26,6 +26,102 @@ import geometria
 ### ============================================================================
 
 # --- CONFIGURACIÓN DE LA INTERFAZ ---
+
+def inicializar_entorno():
+    pygame.init()
+
+    icon = pygame.image.load('ICON.png')
+    pygame.display.set_icon(icon)
+    pygame.display.set_caption('Space Invaders')
+
+    screen = pygame.display.set_mode(
+        (config.ANCHO_PANTALLA, config.ALTO_PANTALLA)
+    )
+    pygame.display.set_caption(
+        "Arc17_Jauja_remejorado: Motor de Escalado y Exportación"
+    )
+    clock = pygame.time.Clock()
+
+    return screen, clock
+
+
+def crear_superficies_base():
+    surf_recta = pygame.Surface((LARGO_RECTA, ANCHO_VIA), pygame.SRCALPHA)
+
+    tam_seguro = 2000
+    surf_rtd_gt, enganche_rtd = dibujar_rotonda(
+        "D",
+        config.ESCALA,
+        tam_seguro,
+        config.GRIS_LINEAS,
+        config.AMARILLO_DERECHO
+    )
+    surf_rti_gt, enganche_rti = dibujar_rotonda(
+        "I",
+        config.ESCALA,
+        tam_seguro,
+        config.GRIS_LINEAS,
+        config.AMARILLO_DERECHO
+    )
+
+    w_rtd, h_rtd = surf_rtd_gt.get_width(), surf_rtd_gt.get_height()
+    w_rti, h_rti = surf_rti_gt.get_width(), surf_rti_gt.get_height()
+
+    ex_rtd = enganche_rtd["entrada_x"]
+    ey_rtd = enganche_rtd["entrada_y"]
+    sx_rtd = enganche_rtd["salida_x"]
+    sy_rtd = enganche_rtd["salida_y"]
+
+    ex_rti = enganche_rti["entrada_x"]
+    ey_rti = enganche_rti["entrada_y"]
+    sx_rti = enganche_rti["salida_x"]
+    sy_rti = enganche_rti["salida_y"]
+
+    surf_rc_real = pygame.Surface((ANCHO_RC_REAL, ALTO_RC_REAL), pygame.SRCALPHA)
+
+    return {
+        "surf_recta": surf_recta,
+        "surf_rc_real": surf_rc_real,
+        "surf_rtd_gt": surf_rtd_gt,
+        "surf_rti_gt": surf_rti_gt,
+        "w_rtd": w_rtd,
+        "h_rtd": h_rtd,
+        "ex_rtd": ex_rtd,
+        "ey_rtd": ey_rtd,
+        "sx_rtd": sx_rtd,
+        "sy_rtd": sy_rtd,
+        "w_rti": w_rti,
+        "h_rti": h_rti,
+        "ex_rti": ex_rti,
+        "ey_rti": ey_rti,
+        "sx_rti": sx_rti,
+        "sy_rti": sy_rti,
+    }
+
+
+def crear_catalogo_piezas(superficies):
+    return catalog.inicializar_catalogo(
+        superficies["surf_recta"],
+        superficies["surf_rc_real"],
+        superficies["surf_rtd_gt"],
+        superficies["surf_rti_gt"],
+        superficies["w_rtd"],
+        superficies["h_rtd"],
+        superficies["ex_rtd"],
+        superficies["ey_rtd"],
+        superficies["sx_rtd"],
+        superficies["sy_rtd"],
+        superficies["w_rti"],
+        superficies["h_rti"],
+        superficies["ex_rti"],
+        superficies["ey_rti"],
+        superficies["sx_rti"],
+        superficies["sy_rti"],
+    )
+
+
+
+'''
 pygame.init()
 
 # Forzamos la lectura explícita desde el espacio de nombres de config para blindar Spyder
@@ -40,6 +136,10 @@ pygame.display.set_caption('Space Invaders')
 screen = pygame.display.set_mode((config.ANCHO_PANTALLA,  config.ALTO_PANTALLA))
 pygame.display.set_caption("Arc17_Jauja_remejorado: Motor de Escalado y Exportación")
 clock = pygame.time.Clock()
+'''
+
+screen, clock = inicializar_entorno()
+
 
 # ============================================================================
 ### Declaracones
@@ -278,10 +378,30 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
 # =============================================================================
 
 
+superficies = crear_superficies_base()
+
+surf_recta = superficies["surf_recta"]
+surf_rc_real = superficies["surf_rc_real"]
+surf_rtd_gt = superficies["surf_rtd_gt"]
+surf_rti_gt = superficies["surf_rti_gt"]
+
+w_rtd = superficies["w_rtd"]
+h_rtd = superficies["h_rtd"]
+ex_rtd = superficies["ex_rtd"]
+ey_rtd = superficies["ey_rtd"]
+sx_rtd = superficies["sx_rtd"]
+sy_rtd = superficies["sy_rtd"]
+
+w_rti = superficies["w_rti"]
+h_rti = superficies["h_rti"]
+ex_rti = superficies["ex_rti"]
+ey_rti = superficies["ey_rti"]
+sx_rti = superficies["sx_rti"]
+sy_rti = superficies["sy_rti"]
 
 
 
-
+'''
 # Surfaces
 surf_recta = pygame.Surface((LARGO_RECTA, ANCHO_VIA), pygame.SRCALPHA)
 #surf_rc_local = pygame.Surface((int(LARGO_RECTA), int(ANCHO_VIA)), pygame.SRCALPHA)
@@ -297,20 +417,24 @@ ex_rti, ey_rti, sx_rti, sy_rti = enganche_rti["entrada_x"], enganche_rti["entrad
 
 
 surf_rc_real = pygame.Surface((ANCHO_RC_REAL, ALTO_RC_REAL), pygame.SRCALPHA)
-
+'''
 
 
 # =============================================================================
 # ========================= DICCIONARIO INTERNO (CARGA EXTERNA) ===============
 # ::::::::::::::::::::::::: DESDE MODULO INTERNO ::::::::::::::::::::::::::::::
 # =============================================================================
-
+'''
 # Cargamos el catálogo modularizado pasando las dependencias calculadas previamente
 CATALOGO_PIEZAS = catalog.inicializar_catalogo(
     surf_recta, surf_rc_real, surf_rtd_gt, surf_rti_gt,
     w_rtd, h_rtd, ex_rtd, ey_rtd, sx_rtd, sy_rtd,
     w_rti, h_rti, ex_rti, ey_rti, sx_rti, sy_rti
 )
+'''
+
+CATALOGO_PIEZAS = crear_catalogo_piezas(superficies)
+
 
 # =============================================================================
 # ====================   MOLDES DE PIEZAS   ===================================
