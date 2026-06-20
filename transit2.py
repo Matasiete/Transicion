@@ -19,6 +19,7 @@ import os
 # 1. IMPORTACIÓNES INTERNAS
 import config
 import catalog
+import geometria
 
 ### ============================================================================
 ###### Inicialización del entorno
@@ -70,83 +71,6 @@ TAM_SEGURO = 2000
 CADENA_ENTRADA = "R, SCD, R, CD90, RC, CD90, SCI, RTD, R"  # Entrada parametrizada del usuario
 #CADENA_ENTRADA = "R, RC, R, CD90, RC, RC, CI45, RC"
 
-# =============================================================================
-# =============================================================================
-## FUNCIONES DE CÁCLCULO
-# =============================================================================
-
-# =============================================================================
-# ### rotar_punto_local()
-# =============================================================================
-def rotar_punto_local(punto_local, centro_local, angulo_grados):
-    '''
-    Objetivo: Rota un punto alrededor del centro de su superficie original aplicando trigonometría en sentido antihorario.
-    Parametros:
-    P1: punto_local (pygame.Vector2) -> Coordenada X,Y original sin rotar dentro del molde de la pieza.
-    P2: centro_local (pygame.Vector2) -> Punto medio de la superficie que actúa como eje de rotación.
-    P3: angulo_grados (float) -> Ángulo de inclinación acumulado en el circuito.
-    Returns:
-    pygame.Vector2 -> Coordenada relativa calculada tras aplicar la rotación.
-    LLama a: math.radians(), math.cos(), math.sin(), pygame.Vector2()
-    LLamada por: procesar_y_conectar_pieza()
-    '''
-    angulo_rad = math.radians(-angulo_grados)
-    rx = punto_local.x - centro_local.x
-    ry = punto_local.y - centro_local.y
-    nx = rx * math.cos(angulo_rad) - ry * math.sin(angulo_rad)
-    ny = rx * math.sin(angulo_rad) + ry * math.cos(angulo_rad)
-    return pygame.Vector2(nx, ny)
-
-
-
-
-
-# =============================================================================
-# ### procesar_y_conectar_pieza()
-# =============================================================================
-def procesar_y_conectar_pieza(codigo, eje_conexion_mundo, angulo_acumulado):
-    '''
-    Objetivo: Actúa como función de cálculo única para cualquier pieza. Recibe el punto de conexión global y el ángulo acumulado de la carrera, absorbe las discrepancies de diseño del molde y devuelve la superficie rotada lista para pintar junto con sus nuevas coordenadas y el ángulo de salida actualizado.
-    Parametros:
-    P1: codigo, string -> Código nominal de la pieza ("R", "RTD").
-    P2: eje_conexion_mundo, pygame.Vector2 -> Punto medio de la salida de la pieza anterior en el mundo.
-    P3: angulo_acumulado (float) -> Dirección actual de la carrera en grados.
-    Returns:
-    surf_rotada, pygame.Surface -> Imagen de la pieza girada correctamente.
-    rect_pieza, pygame.Rect -> Rectángulo posicionado en el espacio del mundo.
-    mundo_sal_C, pygame.Vector2 -> Posición global de la salida izquierda (Gris).
-    mundo_sal_D, pygame.Vector2 -> Posición global de la salida derecha (Amarilla).
-    nuevo_angulo, float -> Ángulo de dirección de la carrera actualizado para la siguiente loseta.
-    LLama a: rotar_punto_local(), pygame.transform.rotate()
-    LLamada por: Bloque de procesamiento de la pista (Main) en el bucle iterativo de la receta de tramos.
-    '''    
-    
-    if codigo not in CATALOGO_PIEZAS:
-        print(f"Error: La pieza '{codigo}' no existe en el catálogo.")
-        return None
-        
-    cfg = CATALOGO_PIEZAS[codigo]
-    angulo_render = angulo_acumulado + cfg["ang_correccion"]
-    
-    surf_rotada = pygame.transform.rotate(cfg["superficie"], angulo_render)
-    rect_pieza = surf_rotada.get_rect()
-    
-    eje_entrada_local = (cfg["ent_local_A"] + cfg["ent_local_B"]) / 2.0
-    v_ent_rotado = rotar_punto_local(eje_entrada_local, cfg["centro_local"], angulo_render)
-    centro_mundo = eje_conexion_mundo - v_ent_rotado
-    
-    
-    #rect_pieza.center = (int(centro_mundo.x), int(centro_mundo.y))
-    # CORRECCIÓN: Usamos round() antes de int() para evitar el desplazamiento por truncamiento
-    rect_pieza.center = (int(round(centro_mundo.x)), int(round(centro_mundo.y)))
-    
-    
-    mundo_sal_C = centro_mundo + rotar_punto_local(cfg["sal_local_C"], cfg["centro_local"], angulo_render)
-    mundo_sal_D = centro_mundo + rotar_punto_local(cfg["sal_local_D"], cfg["centro_local"], angulo_render)
-    
-    nuevo_angulo = angulo_acumulado + cfg["aporte_angular"]
-    return surf_rotada, rect_pieza, mundo_sal_C, mundo_sal_D, nuevo_angulo
-
 
 # =============================================================================
 ###  FUNCIONES DE REPRESENTACIÓN
@@ -190,7 +114,11 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
     cy = y_origen - l_brazo_largo - math.sqrt(r_ext**2 - (ancho_pieza / 2.0)**2)
     desfase_c = ancho_pieza / 2.0
 
+    cx_corto = cx - (2.15 * escala) * s
+    cy_corto = cy + (2.15 * escala)
 
+    rad_desvio = math.asin((ancho_pieza / 2.0) / r_ext)
+    grado_desvio = math.degrees(rad_desvio)
 
     x_ext_in = cx + desfase_c * s
     x_int_in = cx - desfase_c * s
@@ -225,7 +153,14 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
 
     # 1. Tramos de Entrada (Verticales): Entrada Abierta
     pygame.draw.line(surf_canvas, color_ext, (x_ext_in, y_base_in), (x_ext_in, y_junta_entrada),
-  
+                     GROSOR_AMARILLO if mano == "D" else GROSOR_LINEA)
+    pygame.draw.line(surf_canvas, color_int, (x_int_in, y_base_in), (x_int_in, y_junta_entrada),
+                     GROSOR_DECORATIVO)  # interior siempre decorativo
+    # ❌ ENTRADA ABIERTA: Hemos borrado la línea que unía (x_ext_in, y_base_in) con (x_int_in, y_base_in)
+
+    # 2. Tramos de Salida (Horizontales): Salida Cerrada
+    pygame.draw.line(surf_canvas, color_ext, (x_junta_rotonda_out, y_ext_out), (xc_C, y_ext_out),
+                     GROSOR_AMARILLO if mano == "I" else GROSOR_LINEA)
     pygame.draw.line(surf_canvas, color_int, (x_junta_rotonda_out, y_int_out), (xc_C, y_int_out),
                      GROSOR_DECORATIVO)  # interior siempre decorativo
     
@@ -272,7 +207,18 @@ def dibujar_rotonda(mano, escala, tam_surf, gris, amarillo):
 # DRAWER DIBUJAR SHARP CORNERS
 # =============================================================================
 def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
-    2
+    surf_local = pygame.Surface((tam_surf, tam_surf), pygame.SRCALPHA)
+    
+    if mano == "I":
+        s = -1
+        color_ext = gris
+        color_int = amarillo
+    else:
+        s = 1
+        color_ext = amarillo
+        color_int = gris
+
+    x_X = tam_surf // 2
     y_X = tam_surf // 2 + 150
     calzada = 6.0 * escala
     techo_total = 18.0 * escala
@@ -281,7 +227,12 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
     ancho_hueco = 6.0 * escala
     prof_hueco = 2.0 * escala 
 
- zada * s
+    x_der_ext = x_X + (calzada / 2.0) * s
+    x_der_int = x_X - (calzada / 2.0) * s
+    y_base_der = y_X
+    y_techo = y_X - alto_der
+    x_izq_ext = x_der_ext - techo_total * s
+    x_izq_int = x_izq_ext + calzada * s
     y_base_izq = y_techo + alto_izq
     x_hueco_der = x_der_int
     y_hueco_fondo = y_techo + (alto_der - prof_hueco) - calzada
@@ -301,7 +252,12 @@ def dibujar_sharp_corners(mano, escala, grosor_linea, tam_surf, gris, amarillo):
 
     # Tapas de extremos
     pygame.draw.line(surf_local, gris, (x_izq_ext, y_base_izq), (x_izq_int, y_base_izq), grosor_linea) 
- prof_hueco) - 10
+    pygame.draw.line(surf_local, gris, (x_der_ext, y_base_der), (x_der_int, y_base_der), grosor_linea) 
+
+    # Estructura Interna
+    y_division_entrada = y_base_der - (alto_der - (y_hueco_fondo - y_techo)) / 2.0
+    x_eje_salida = x_izq_ext + (calzada / 2.0) * s
+    top_int_izq = (y_hueco_fondo + prof_hueco) - 10
     
     # Casillero horizontal lado largo
     pygame.draw.line(surf_local, gris, (x_der_ext, y_division_entrada), (x_der_int, y_division_entrada), grosor_linea)
@@ -419,7 +375,15 @@ pygame.draw.line(surf_rc_local, config.AMARILLO_DERECHO, (0, ancho_via_local), (
 pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, 0), (0, ancho_via_local), GROSOR_LINEA)
 pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (l_corta, 0), (l_corta, ancho_via_local), GROSOR_LINEA)
 
-# Línea 
+# Línea central divisoria de carriles
+pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (0, ancho_via_local // 2), (l_corta, ancho_via_local // 2), GROSOR_LINEA)
+
+# 2 travesaños internos para formar exactamente las 3 casillas reales de carrera (3.2 unidades cada una)
+ancho_casilla_rc = l_corta / 3.0
+for i in range(1, 3):
+    x_t = i * ancho_casilla_rc
+    pygame.draw.line(surf_rc_local, config.GRIS_LINEAS, (x_t, 0), (x_t, ancho_via_local), GROSOR_LINEA)
+
 # Guardar la superficie e inyectar el promedio de enganche en el motor
 CATALOGO_PIEZAS["RC"]["superficie"] = surf_rc_local
 CATALOGO_PIEZAS["RC"]["promedio_entrada_local"] = (cfg_rc["ent_local_A"] + cfg_rc["ent_local_B"]) / 2.0
@@ -451,7 +415,9 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
     alto_local = int(cfg["alto"])
     
     # Crear la superficie local transparente
-  
+    surf_local = pygame.Surface((ancho_local, alto_local), pygame.SRCALPHA)
+    
+    es_90 = '90' in codigo
     es_izq = 'I' in codigo
     r_int = 2 * config.ESCALA if es_90 else 6 * config.ESCALA
     r_ext = 8 * config.ESCALA if es_90 else 12 * config.ESCALA
@@ -472,7 +438,8 @@ for codigo in ["CD90", "CI90", "CD45", "CI45"]:
         rad = math.radians(grado)
         puntos_ext.append((cx_arco + r_ext * math.cos(rad), cy_arco - r_ext * math.sin(rad)))
         puntos_int.append((cx_arco + r_int * math.cos(rad), cy_arco - r_int * math.sin(rad)))
-nificado a GROSOR_LINEA estricto para evitar gaps)
+
+    # Dibujo de líneas perimetrales (Unificado a GROSOR_LINEA estricto para evitar gaps)
     if len(puntos_ext) >= 2:
         pygame.draw.lines(surf_local, config.AMARILLO_DERECHO if es_izq else config.GRIS_LINEAS, False, puntos_ext, GROSOR_LINEA)
         pygame.draw.lines(surf_local, config.GRIS_LINEAS if es_izq else config.AMARILLO_DERECHO, False, puntos_int, GROSOR_LINEA)
@@ -504,7 +471,12 @@ nificado a GROSOR_LINEA estricto para evitar gaps)
 # ////////////////////////////////////////////////////////////
 
 for tipo in despieze:
-    resultado = procesar_y_conectar_pieza(tipo, punto_conexion_actual, angulo_carrera_actual)
+    resultado = geometria.procesar_y_conectar_pieza(
+    tipo,
+    punto_conexion_actual,
+    angulo_carrera_actual,
+    CATALOGO_PIEZAS
+    )
     if resultado is not None:
         surf_rot, rect_p, sal_C, sal_D, siguiente_angulo = resultado
         piezas_calculadas.append({
@@ -513,6 +485,8 @@ for tipo in despieze:
             "sal_C": sal_C,
             "sal_D": sal_D
         })
+        
+    
         punto_conexion_actual = (sal_C + sal_D) / 2.0
         angulo_carrera_actual = siguiente_angulo
 
@@ -616,8 +590,8 @@ for idx, pieza in enumerate(piezas_calculadas):
         cfg_primera = CATALOGO_PIEZAS[despieze[0]]
         angulo_r1 = ANGULO_INICIAL + cfg_primera["ang_correccion"]
         centro_m1 = pygame.Vector2(pieza["rect"].center)
-        p_ent_A_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
-        p_ent_B_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
+        p_ent_A_mundo = centro_m1 + geometria.rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
+        p_ent_B_mundo = centro_m1 + geometria.rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
         p_A_camara = centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA
         p_B_camara = centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA
         pygame.draw.line(superficie_export, config.GRIS_LINEAS, p_A_camara, p_B_camara, GROSOR_DECORATIVO)
@@ -698,8 +672,8 @@ while running:
                 cfg_primera = CATALOGO_PIEZAS[despieze[0]]
                 angulo_r1 = ANGULO_INICIAL + cfg_primera["ang_correccion"]
                 centro_m1 = pygame.Vector2(pieza["rect"].center)
-                p_ent_A_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
-                p_ent_B_mundo = centro_m1 + rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
+                p_ent_A_mundo = centro_m1 + geometria.rotar_punto_local(cfg_primera["ent_local_A"], cfg_primera["centro_local"], angulo_r1)
+                p_ent_B_mundo = centro_m1 + geometria.rotar_punto_local(cfg_primera["ent_local_B"], cfg_primera["centro_local"], angulo_r1)
                 pygame.draw.line(screen, config.GRIS_LINEAS, centro_pantalla + (p_ent_A_mundo - centro_pista) * FACTOR_CAMARA, centro_pantalla + (p_ent_B_mundo - centro_pista) * FACTOR_CAMARA, GROSOR_DECORATIVO)
 
             #Debug
