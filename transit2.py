@@ -141,29 +141,68 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
 
         contenido_svg = SVGreader.cargar_svg_representacion(clave, forma)
 
+# =============================================================================
+#         if contenido_svg:
+#             try:
+#                 root = ET.fromstring(contenido_svg)
+#                 if root.tag == 'svg':
+#                     for child in root:
+#                         limpiar_transformaciones(child)
+#                     contenido_interno = ''.join(ET.tostring(child, encoding='unicode') for child in root)
+#                 else:
+#                     contenido_interno = contenido_svg
+#             except ET.ParseError:
+#                 contenido_interno = contenido_svg
+# 
+#             if idx == 0:
+#                 grupo = f'<g>\n{contenido_interno}\n</g>'
+#             else:
+#                 ultima_colocada = circuito_colocado[idx-1]
+#                 salida_anterior = ultima_colocada["salida"]
+#                 tx = salida_anterior.x - entrada_original.x
+#                 ty = salida_anterior.y - entrada_original.y
+#                 rotacion = pieza["rotacion"]
+#                 transform = f"translate({tx}, {ty}) rotate({rotacion}, {entrada_original.x}, {entrada_original.y})"
+#                 grupo = f'<g transform="{transform}">\n{contenido_interno}\n</g>'
+#             contenido_piezas += grupo
+# =============================================================================
+            
         if contenido_svg:
             try:
                 root = ET.fromstring(contenido_svg)
-                if root.tag == 'svg':
-                    for child in root:
-                        limpiar_transformaciones(child)
-                    contenido_interno = ''.join(ET.tostring(child, encoding='unicode') for child in root)
-                else:
-                    contenido_interno = contenido_svg
-            except ET.ParseError:
+                
+                # === LIMPIEZA IMPORTANTE ===
+                for elem in root.iter():
+                    # Quitar cualquier transform interno
+                    if 'transform' in elem.attrib:
+                        del elem.attrib['transform']
+                    
+                    # Limpiar namespaces de Inkscape/SVG
+                    if '}' in elem.tag:
+                        elem.tag = elem.tag.split('}', 1)[1]
+                
+                # Extraer solo el contenido interno (sin la etiqueta <svg> exterior)
+                contenido_interno = ''
+                for child in root:
+                    if child.tag != 'svg':  # evitar duplicar svg
+                        contenido_interno += ET.tostring(child, encoding='unicode')
+                
+            except Exception as e:
+                print(f"   Warning parsing {clave}: {e}")
                 contenido_interno = contenido_svg
 
-            if idx == 0:
-                grupo = f'<g>\n{contenido_interno}\n</g>'
-            else:
-                ultima_colocada = circuito_colocado[idx-1]
-                salida_anterior = ultima_colocada["salida"]
-                tx = salida_anterior.x - entrada_original.x
-                ty = salida_anterior.y - entrada_original.y
-                rotacion = pieza["rotacion"]
-                transform = f"translate({tx}, {ty}) rotate({rotacion}, {entrada_original.x}, {entrada_original.y})"
-                grupo = f'<g transform="{transform}">\n{contenido_interno}\n</g>'
+            # === TRANSFORMACIÓN ÚNICA POR PIEZA ===
+            tx = salida_anterior.x - entrada_original.x
+            ty = salida_anterior.y - entrada_original.y
+            rotacion = pieza.get("rotacion", 0)
+            
+            # Transform limpia
+            transform_str = f"translate({tx:.4f}, {ty:.4f}) rotate({rotacion:.2f}, {entrada_original.x:.4f}, {entrada_original.y:.4f})"
+            
+            grupo = f'<g transform="{transform_str}">\n{contenido_interno}\n</g>'
             contenido_piezas += grupo
+            
+
         else:
             x, y = pieza["hitbox"].exterior.xy
             puntos = " ".join(f"{px},{py}" for px, py in zip(x, y))
