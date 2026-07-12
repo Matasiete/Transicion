@@ -47,7 +47,7 @@ def flip_punto(x, y, cx, cy, flip_horizontal, flip_vertical):
     return cx + dx, cy + dy
 
 def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_losetas_limpia,
-                                     nombre_archivo="circuito.svg", meteoros_por_loseta=None):
+                                      nombre_archivo="circuito.svg", meteoros_por_loseta=None):
     if not secuencia_claves:
         return None, None
 
@@ -95,7 +95,7 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
         print("❌ No se pudo posicionar ninguna pieza.")
         return None, None
 
-    # 2. Calcular bounding box original
+    # 2. Calcular bounding box original (se mantiene)
     min_x = min_y = float('inf')
     max_x = max_y = float('-inf')
     for pieza in circuito_colocado:
@@ -105,12 +105,7 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
             if x > max_x: max_x = x
             if y > max_y: max_y = y
 
-# =============================================================================
-#     ancho_original = max_x - min_x
-#     alto_original = max_y - min_y
-# =============================================================================
-
-    # 3. Calcular rotación global
+    # 3. Calcular rotación global (se mantiene igual)
     primera_pieza = circuito_colocado[0]
     vx = primera_pieza["salida"].x - primera_pieza["entrada"].x
     vy = primera_pieza["salida"].y - primera_pieza["entrada"].y
@@ -129,7 +124,7 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
     cx = (min_x + max_x) / 2.0
     cy = (min_y + max_y) / 2.0
 
-    # 4. Construir contenido del circuito
+    # 4. Construir contenido del circuito (VERSIÓN LIMPIA)
     contenido_piezas = ""
     etiquetas = []
     meteoros_list = []
@@ -141,68 +136,40 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
 
         contenido_svg = SVGreader.cargar_svg_representacion(clave, forma)
 
-# =============================================================================
-#         if contenido_svg:
-#             try:
-#                 root = ET.fromstring(contenido_svg)
-#                 if root.tag == 'svg':
-#                     for child in root:
-#                         limpiar_transformaciones(child)
-#                     contenido_interno = ''.join(ET.tostring(child, encoding='unicode') for child in root)
-#                 else:
-#                     contenido_interno = contenido_svg
-#             except ET.ParseError:
-#                 contenido_interno = contenido_svg
-# 
-#             if idx == 0:
-#                 grupo = f'<g>\n{contenido_interno}\n</g>'
-#             else:
-#                 ultima_colocada = circuito_colocado[idx-1]
-#                 salida_anterior = ultima_colocada["salida"]
-#                 tx = salida_anterior.x - entrada_original.x
-#                 ty = salida_anterior.y - entrada_original.y
-#                 rotacion = pieza["rotacion"]
-#                 transform = f"translate({tx}, {ty}) rotate({rotacion}, {entrada_original.x}, {entrada_original.y})"
-#                 grupo = f'<g transform="{transform}">\n{contenido_interno}\n</g>'
-#             contenido_piezas += grupo
-# =============================================================================
-            
         if contenido_svg:
             try:
                 root = ET.fromstring(contenido_svg)
                 
-                # === LIMPIEZA IMPORTANTE ===
+                # LIMPIEZA AGRESIVA
                 for elem in root.iter():
-                    # Quitar cualquier transform interno
                     if 'transform' in elem.attrib:
                         del elem.attrib['transform']
-                    
-                    # Limpiar namespaces de Inkscape/SVG
                     if '}' in elem.tag:
                         elem.tag = elem.tag.split('}', 1)[1]
                 
-                # Extraer solo el contenido interno (sin la etiqueta <svg> exterior)
-                contenido_interno = ''
-                for child in root:
-                    if child.tag != 'svg':  # evitar duplicar svg
-                        contenido_interno += ET.tostring(child, encoding='unicode')
-                
+                contenido_interno = ''.join(
+                    ET.tostring(child, encoding='unicode')
+                    for child in root
+                    if child.tag != 'svg'
+                )
             except Exception as e:
                 print(f"   Warning parsing {clave}: {e}")
                 contenido_interno = contenido_svg
 
-            # === TRANSFORMACIÓN ÚNICA POR PIEZA ===
-            tx = salida_anterior.x - entrada_original.x
-            ty = salida_anterior.y - entrada_original.y
-            rotacion = pieza.get("rotacion", 0)
-            
-            # Transform limpia
-            transform_str = f"translate({tx:.4f}, {ty:.4f}) rotate({rotacion:.2f}, {entrada_original.x:.4f}, {entrada_original.y:.4f})"
-            
-            grupo = f'<g transform="{transform_str}">\n{contenido_interno}\n</g>'
-            contenido_piezas += grupo
-            
+            # Transformación
+            if idx == 0:
+                grupo = f'<g>\n{contenido_interno}\n</g>'
+            else:
+                ultima_colocada = circuito_colocado[idx-1]
+                salida_anterior = ultima_colocada["salida"]
+                tx = salida_anterior.x - entrada_original.x
+                ty = salida_anterior.y - entrada_original.y
+                rotacion = pieza.get("rotacion", 0)
+                
+                transform_str = f"translate({tx:.4f}, {ty:.4f}) rotate({rotacion:.2f}, {entrada_original.x:.4f}, {entrada_original.y:.4f})"
+                grupo = f'<g transform="{transform_str}">\n{contenido_interno}\n</g>'
 
+            contenido_piezas += grupo
         else:
             x, y = pieza["hitbox"].exterior.xy
             puntos = " ".join(f"{px},{py}" for px, py in zip(x, y))
@@ -236,12 +203,22 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
 
         # ---------- METEORO ----------
         if clave in meteoros_por_loseta:
+            # (tu código de meteoros aquí - se mantiene igual)
+            abrev = meteoros_por_loseta[clave]
+            # ... resto del código de meteoros ...
+            pass  # reemplaza con tu código original de meteoros
+
+    # Resto de la función (rotación global, viewBox, etc.) se mantiene igual
+    # Copia desde aquí hacia abajo lo que tenías originalmente
+
+# ---------- METEORO ----------
+        if clave in meteoros_por_loseta:
             abrev = meteoros_por_loseta[clave]
             radio = 8
             separacion_centros = 2.0
             x_met = x_etiqueta + 10 + 0.6 + (separacion_centros / 2) + radio
             y_met = y_etiqueta - 10
-
+        
             if abrev == "CT":
                 color_fondo = "white"
                 color_texto = "black"
@@ -251,9 +228,9 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
                 color_texto = "white"
                 color_borde = "black"
 
-            meteoros_list.append((x_met, y_met, abrev, color_fondo, color_texto, color_borde, separacion_centros, radio))
+    meteoros_list.append((x_met, y_met, abrev, color_fondo, color_texto, color_borde, separacion_centros, radio))
 
-    # 5. Aplicar rotación global
+# 5. Aplicar rotación global
     if abs(rotacion_global) > 0.5:
         contenido_piezas = f'<g transform="rotate({rotacion_global}, {cx}, {cy})">\n{contenido_piezas}\n</g>'
 
@@ -434,6 +411,8 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
 
     print(f"✅ SVG guardado como '{ruta_salida}'")
     return ruta_salida, rumbo_acumulado
+
+
 
 def generar_json_etapa(secuencia, nombre_tour, sesion, etapa, rumbo_final, 
                        meteoros_por_loseta=None, nombre_personalizado=""):
