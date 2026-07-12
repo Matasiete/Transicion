@@ -1,7 +1,19 @@
 # -*- coding: utf-8 -*-
 """
-Versión definitiva con cabecera comentada para PDF, nombres personalizados de etapas
-e integración con PDFGenerator.
+Created on Thu Jul  9 23:45:49 2026
+
+@author: Matasiete
+Proyecto McPy.
+
+
+Versiones:
+
+
+"""
+
+# -*- coding: utf-8 -*-
+"""
+Versión definitiva con cabecera con margen, circuito apaisado y orientación de salida corregida.
 """
 
 import copy
@@ -47,7 +59,7 @@ def flip_punto(x, y, cx, cy, flip_horizontal, flip_vertical):
     return cx + dx, cy + dy
 
 def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_losetas_limpia,
-                                      nombre_archivo="circuito.svg", meteoros_por_loseta=None):
+                                     nombre_archivo="circuito.svg", meteoros_por_loseta=None):
     if not secuencia_claves:
         return None, None
 
@@ -95,7 +107,7 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
         print("❌ No se pudo posicionar ninguna pieza.")
         return None, None
 
-    # 2. Calcular bounding box original (se mantiene)
+    # 2. Calcular bounding box original
     min_x = min_y = float('inf')
     max_x = max_y = float('-inf')
     for pieza in circuito_colocado:
@@ -105,7 +117,12 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
             if x > max_x: max_x = x
             if y > max_y: max_y = y
 
-    # 3. Calcular rotación global (se mantiene igual)
+# =============SIN USO SEGUN Pyflakes==============================================
+#     ancho_original = max_x - min_x
+#     alto_original = max_y - min_y
+# 
+# =============================================================================
+    # 3. Calcular rotación global (para orientar la salida al Norte o Este)
     primera_pieza = circuito_colocado[0]
     vx = primera_pieza["salida"].x - primera_pieza["entrada"].x
     vy = primera_pieza["salida"].y - primera_pieza["entrada"].y
@@ -124,7 +141,7 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
     cx = (min_x + max_x) / 2.0
     cy = (min_y + max_y) / 2.0
 
-    # 4. Construir contenido del circuito (VERSIÓN LIMPIA)
+    # 4. Construir contenido del circuito
     contenido_piezas = ""
     etiquetas = []
     meteoros_list = []
@@ -139,24 +156,15 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
         if contenido_svg:
             try:
                 root = ET.fromstring(contenido_svg)
-                
-                # LIMPIEZA AGRESIVA
-                for elem in root.iter():
-                    if 'transform' in elem.attrib:
-                        del elem.attrib['transform']
-                    if '}' in elem.tag:
-                        elem.tag = elem.tag.split('}', 1)[1]
-                
-                contenido_interno = ''.join(
-                    ET.tostring(child, encoding='unicode')
-                    for child in root
-                    if child.tag != 'svg'
-                )
-            except Exception as e:
-                print(f"   Warning parsing {clave}: {e}")
+                if root.tag == 'svg':
+                    for child in root:
+                        limpiar_transformaciones(child)
+                    contenido_interno = ''.join(ET.tostring(child, encoding='unicode') for child in root)
+                else:
+                    contenido_interno = contenido_svg
+            except ET.ParseError:
                 contenido_interno = contenido_svg
 
-            # Transformación
             if idx == 0:
                 grupo = f'<g>\n{contenido_interno}\n</g>'
             else:
@@ -164,11 +172,9 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
                 salida_anterior = ultima_colocada["salida"]
                 tx = salida_anterior.x - entrada_original.x
                 ty = salida_anterior.y - entrada_original.y
-                rotacion = pieza.get("rotacion", 0)
-                
-                transform_str = f"translate({tx:.4f}, {ty:.4f}) rotate({rotacion:.2f}, {entrada_original.x:.4f}, {entrada_original.y:.4f})"
-                grupo = f'<g transform="{transform_str}">\n{contenido_interno}\n</g>'
-
+                rotacion = pieza["rotacion"]
+                transform = f"translate({tx}, {ty}) rotate({rotacion}, {entrada_original.x}, {entrada_original.y})"
+                grupo = f'<g transform="{transform}">\n{contenido_interno}\n</g>'
             contenido_piezas += grupo
         else:
             x, y = pieza["hitbox"].exterior.xy
@@ -203,22 +209,12 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
 
         # ---------- METEORO ----------
         if clave in meteoros_por_loseta:
-            # (tu código de meteoros aquí - se mantiene igual)
-            abrev = meteoros_por_loseta[clave]
-            # ... resto del código de meteoros ...
-            pass  # reemplaza con tu código original de meteoros
-
-    # Resto de la función (rotación global, viewBox, etc.) se mantiene igual
-    # Copia desde aquí hacia abajo lo que tenías originalmente
-
-# ---------- METEORO ----------
-        if clave in meteoros_por_loseta:
             abrev = meteoros_por_loseta[clave]
             radio = 8
             separacion_centros = 2.0
             x_met = x_etiqueta + 10 + 0.6 + (separacion_centros / 2) + radio
             y_met = y_etiqueta - 10
-        
+
             if abrev == "CT":
                 color_fondo = "white"
                 color_texto = "black"
@@ -228,9 +224,9 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
                 color_texto = "white"
                 color_borde = "black"
 
-    meteoros_list.append((x_met, y_met, abrev, color_fondo, color_texto, color_borde, separacion_centros, radio))
+            meteoros_list.append((x_met, y_met, abrev, color_fondo, color_texto, color_borde, separacion_centros, radio))
 
-# 5. Aplicar rotación global
+    # 5. Aplicar rotación global
     if abs(rotacion_global) > 0.5:
         contenido_piezas = f'<g transform="rotate({rotacion_global}, {cx}, {cy})">\n{contenido_piezas}\n</g>'
 
@@ -255,8 +251,10 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
     rotacion_landscape = 0
     
     if alto_actual > ancho_actual:
+        # Rotar todo el contenido 90° para que sea apaisado
         rotacion_landscape = -90
         contenido_piezas = f'<g transform="rotate({rotacion_landscape}, {cx}, {cy})">\n{contenido_piezas}\n</g>'
+        # Recalcular bounding box después de la rotación landscape
         nuevas_esquinas_landscape = []
         for x, y in esquinas:
             nx, ny = rotar_punto(x, y, cx, cy, rotacion_landscape)
@@ -268,87 +266,104 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
         view_max_x = max(xs_l) + margen
         view_max_y = max(ys_l) + margen
 
+    # 8. APLICAR FLIP PARA CORREGIR ORIENTACIÓN DE SALIDA
+    # Después de la rotación landscape, comprobar la orientación de la salida
+    # y aplicar flip horizontal o vertical si es necesario
+    flip_horizontal = False
+    flip_vertical = False
+    
+    # Recalcular la orientación de la salida después de todas las rotaciones
+    # Para ello, tomamos la primera pieza y aplicamos las rotaciones a su vector de salida
+    vx_primera = primera_pieza["salida"].x - primera_pieza["entrada"].x
+    vy_primera = primera_pieza["salida"].y - primera_pieza["entrada"].y
+    
+    # Aplicar rotación global al vector
+    if abs(rotacion_global) > 0.5:
+        ang_rad = math.radians(rotacion_global)
+        vx_primera, vy_primera = (
+            vx_primera * math.cos(ang_rad) - vy_primera * math.sin(ang_rad),
+            vx_primera * math.sin(ang_rad) + vy_primera * math.cos(ang_rad)
+        )
+    
+    # Aplicar rotación landscape al vector
+    if abs(rotacion_landscape) > 0.5:
+        ang_rad = math.radians(rotacion_landscape)
+        vx_primera, vy_primera = (
+            vx_primera * math.cos(ang_rad) - vy_primera * math.sin(ang_rad),
+            vx_primera * math.sin(ang_rad) + vy_primera * math.cos(ang_rad)
+        )
+    
+    # Normalizar el vector para obtener la orientación
+    ang_final = math.degrees(math.atan2(vy_primera, vx_primera))
+    
+    # Decidir qué flip aplicar
+    # Si apunta al Sur (180° ± 45°), aplicar flip horizontal
+    if abs(ang_final - 180) < 45 or abs(ang_final + 180) < 45:
+        flip_horizontal = True
+    # Si apunta al Oeste (-90° ± 45°), aplicar flip vertical
+    elif abs(ang_final + 90) < 45 or abs(ang_final - 270) < 45:
+        flip_vertical = True
+    
+    # Aplicar flip al contenido si es necesario
+    if flip_horizontal or flip_vertical:
+        # Aplicar flip a las piezas
+        transform_flip = ""
+        if flip_horizontal and flip_vertical:
+            transform_flip = f"scale(-1, -1) translate({-2*cx}, {-2*cy})"
+        elif flip_horizontal:
+            transform_flip = f"scale(-1, 1) translate({-2*cx}, 0)"
+        elif flip_vertical:
+            transform_flip = f"scale(1, -1) translate(0, {-2*cy})"
+        
+        contenido_piezas = f'<g transform="{transform_flip}">\n{contenido_piezas}\n</g>'
+        
+        # Recalcular bounding box después del flip
+        # Aplicamos el flip a las esquinas para obtener el nuevo viewBox
+        esquinas_flip = []
+        for x, y in zip(xs_l if alto_actual > ancho_actual else xs, 
+                         ys_l if alto_actual > ancho_actual else ys):
+            # Aplicamos la misma transformación que al contenido
+            if flip_horizontal:
+                x = -x + 2*cx
+            if flip_vertical:
+                y = -y + 2*cy
+            esquinas_flip.append((x, y))
+        
+        xs_f = [p[0] for p in esquinas_flip]
+        ys_f = [p[1] for p in esquinas_flip]
+        view_min_x = min(xs_f) - margen
+        view_min_y = min(ys_f) - margen
+        view_max_x = max(xs_f) + margen
+        view_max_y = max(ys_f) + margen
 
 # =============================================================================
-#     # 8. APLICAR FLIP PARA CORREGIR ORIENTACIÓN DE SALIDA
-#     flip_horizontal = False
-#     flip_vertical = False
-#     
-#     vx_primera = primera_pieza["salida"].x - primera_pieza["entrada"].x
-#     vy_primera = primera_pieza["salida"].y - primera_pieza["entrada"].y
-#     
-#     if abs(rotacion_global) > 0.5:
-#         ang_rad = math.radians(rotacion_global)
-#         vx_primera, vy_primera = (
-#             vx_primera * math.cos(ang_rad) - vy_primera * math.sin(ang_rad),
-#             vx_primera * math.sin(ang_rad) + vy_primera * math.cos(ang_rad)
-#         )
-#     
-#     if abs(rotacion_landscape) > 0.5:
-#         ang_rad = math.radians(rotacion_landscape)
-#         vx_primera, vy_primera = (
-#             vx_primera * math.cos(ang_rad) - vy_primera * math.sin(ang_rad),
-#             vx_primera * math.sin(ang_rad) + vy_primera * math.cos(ang_rad)
-#         )
-#     
-#     ang_final = math.degrees(math.atan2(vy_primera, vx_primera))
-#     
-#     if abs(ang_final - 180) < 45 or abs(ang_final + 180) < 45:
-#         flip_horizontal = True
-#     elif abs(ang_final + 90) < 45 or abs(ang_final - 270) < 45:
-#         flip_vertical = True
-#     
-#     if flip_horizontal or flip_vertical:
-#         transform_flip = ""
-#         if flip_horizontal and flip_vertical:
-#             transform_flip = f"scale(-1, -1) translate({-2*cx}, {-2*cy})"
-#         elif flip_horizontal:
-#             transform_flip = f"scale(-1, 1) translate({-2*cx}, 0)"
-#         elif flip_vertical:
-#             transform_flip = f"scale(1, -1) translate(0, {-2*cy})"
-#         
-#         contenido_piezas = f'<g transform="{transform_flip}">\n{contenido_piezas}\n</g>'
-#         
-#         esquinas_flip = []
-#         xs_ref = xs_l if alto_actual > ancho_actual else xs
-#         ys_ref = ys_l if alto_actual > ancho_actual else ys
-#         for x, y in zip(xs_ref, ys_ref):
-#             if flip_horizontal:
-#                 x = -x + 2*cx
-#             if flip_vertical:
-#                 y = -y + 2*cy
-#             esquinas_flip.append((x, y))
-#         
-#         xs_f = [p[0] for p in esquinas_flip]
-#         ys_f = [p[1] for p in esquinas_flip]
-#         view_min_x = min(xs_f) - margen
-#         view_min_y = min(ys_f) - margen
-#         view_max_x = max(xs_f) + margen
-#         view_max_y = max(ys_f) + margen
+#     Cabeceras comentadas en favor del Plan de carrera en pdf
 # =============================================================================
-
     # 9. AÑADIR MARGEN SUPERIOR PARA CABECERA
     margen_superior = 15
     view_min_y -= margen_superior
 
-    # 10. DESPLAZAR PARA CABECERA (REDUCIDO PARA SVG SIN CABECERA)
-    desplazamiento_y = 10  # REDUCIDO de 30 a 10 para SVG sin cabecera
+    # 10. DESPLAZAR PARA CABECERA
+    desplazamiento_y = 30
     view_min_y += desplazamiento_y
     view_max_y += desplazamiento_y
 
     contenido_piezas = f'<g transform="translate(0, {desplazamiento_y})">\n{contenido_piezas}\n</g>'
 
     # 11. TRANSFORMAR ETIQUETAS Y METEOROS
+    # Primero aplicar rotación global, luego landscape, luego flip
     etiquetas_transformadas = []
     for x, y, texto, cf, ct, cb in etiquetas:
+        # Rotación global
         if abs(rotacion_global) > 0.5:
             x, y = rotar_punto(x, y, cx, cy, rotacion_global)
+        # Rotación landscape
         if abs(rotacion_landscape) > 0.5:
             x, y = rotar_punto(x, y, cx, cy, rotacion_landscape)
-# =============================================================================
-#         if flip_horizontal or flip_vertical:
-#             x, y = flip_punto(x, y, cx, cy, flip_horizontal, flip_vertical)
-# =============================================================================
+        # Flip
+        if flip_horizontal or flip_vertical:
+            x, y = flip_punto(x, y, cx, cy, flip_horizontal, flip_vertical)
+        # Desplazamiento
         x, y = x, y + desplazamiento_y
         etiquetas_transformadas.append((x, y, texto, cf, ct, cb))
 
@@ -358,10 +373,8 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
             x_met, y_met = rotar_punto(x_met, y_met, cx, cy, rotacion_global)
         if abs(rotacion_landscape) > 0.5:
             x_met, y_met = rotar_punto(x_met, y_met, cx, cy, rotacion_landscape)
-# =============================================================================
-#         if flip_horizontal or flip_vertical:
-#             x_met, y_met = flip_punto(x_met, y_met, cx, cy, flip_horizontal, flip_vertical)
-# =============================================================================
+        if flip_horizontal or flip_vertical:
+            x_met, y_met = flip_punto(x_met, y_met, cx, cy, flip_horizontal, flip_vertical)
         x_met, y_met = x_met, y_met + desplazamiento_y
         meteoros_transformados.append((x_met, y_met, abrev, cf, ct, cb, sep, radio))
 
@@ -374,19 +387,22 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
     # FONDO
     svg_body = f'<rect x="{view_min_x}" y="{view_min_y}" width="{ancho_final}" height="{alto_final}" fill="#f0f0f0" />'
 
-    # ---------- CABECERA COMENTADA (se añade en el PDF) ----------
-    # COMENTADO PARA EL PDF - La cabecera se añade en el PDFGenerator
-    # cabecera_y = view_min_y + 30
-    # svg_body += f'<text x="{view_min_x + 10}" y="{cabecera_y}" font-size="14" font-weight="bold" fill="black">{cabecera_tour}</text>'
-    # svg_body += f'<text x="{view_min_x + 10}" y="{cabecera_y + 18}" font-size="12" fill="black">Secuencia: {cadena_losetas_limpia}</text>'
-
-    # Leyenda de meteoros COMENTADA (se añade en el PDF)
-    # if meteoros_por_loseta:
-    #     leyenda_y = view_min_y + 48
-    #     svg_body += f'<text x="{view_min_x + 10}" y="{leyenda_y}" font-size="12" fill="black" font-weight="bold">Clima:</text>'
-    #     for i, (clave, abrev) in enumerate(meteoros_por_loseta.items()):
-    #         texto = f"{clave}: {abrev}"
-    #         svg_body += f'<text x="{view_min_x + 80 + i*80}" y="{leyenda_y}" font-size="11" fill="black">{texto}</text>'
+# =============================================================================
+# # COMENTADO PARA EL PDF - La cabecera se añade en el PDF
+# =============================================================================
+# # =============================================================================
+#     # CABECERA
+#     cabecera_y = view_min_y + 30
+#     svg_body += f'<text x="{view_min_x + 10}" y="{cabecera_y}" font-size="14" font-weight="bold" fill="black">{cabecera_tour}</text>'
+#     svg_body += f'<text x="{view_min_x + 10}" y="{cabecera_y + 18}" font-size="12" fill="black">Secuencia: {cadena_losetas_limpia}</text>'
+# 
+#     if meteoros_por_loseta:
+#         leyenda_y = view_min_y + 78
+#         svg_body += f'<text x="{view_min_x + 10}" y="{leyenda_y}" font-size="12" fill="black" font-weight="bold">Clima:</text>'
+#         for i, (clave, abrev) in enumerate(meteoros_por_loseta.items()):
+#             texto = f"{clave}: {abrev}"
+#             svg_body += f'<text x="{view_min_x + 80 + i*80}" y="{leyenda_y}" font-size="11" fill="black">{texto}</text>'
+# =============================================================================
 
     # PIEZAS
     svg_body += contenido_piezas
@@ -412,19 +428,10 @@ def construir_y_guardar_circuito_svg(secuencia_claves, cabecera_tour, cadena_los
     print(f"✅ SVG guardado como '{ruta_salida}'")
     return ruta_salida, rumbo_acumulado
 
-
-
-def generar_json_etapa(secuencia, nombre_tour, sesion, etapa, rumbo_final, 
-                       meteoros_por_loseta=None, nombre_personalizado=""):
+def generar_json_etapa(secuencia, nombre_tour, sesion, etapa, rumbo_final, meteoros_por_loseta=None):
     if meteoros_por_loseta is None:
         meteoros_por_loseta = {}
-    
-    # Usar nombre personalizado si existe
-    if nombre_personalizado:
-        nombre_etapa = f"{nombre_personalizado} (S:{sesion} E:{etapa})"
-    else:
-        nombre_etapa = f"{nombre_tour}_S:{sesion}-E:{etapa}"
-    
+    nombre_etapa = f"{nombre_tour}_S:{sesion}-E:{etapa}"
     tiles = []
     for clave in secuencia:
         if clave.endswith("'"):
@@ -432,10 +439,15 @@ def generar_json_etapa(secuencia, nombre_tour, sesion, etapa, rumbo_final,
             tiles.append(f"{base}-upp")
         else:
             tiles.append(clave)
+
+    if nombre_personalizado:
+        nombre_etapa = f"{nombre_personalizado} (S:{sesion} E:{etapa})"
+    else:
+        nombre_etapa = f"{nombre_tour}_S:{sesion}-E:{etapa}"
     
     data = {
         "version": 1,
-        "name": nombre_etapa,
+        "name": nombre_etapa,  # <-- Ahora incluye nombre personalizado o genérico
         "tiles": tiles,
         "checkpoints": [],
         "sprintPoints": 0,
@@ -446,7 +458,6 @@ def generar_json_etapa(secuencia, nombre_tour, sesion, etapa, rumbo_final,
         },
         "weather": meteoros_por_loseta
     }
-    
     os.makedirs(SVGreader.DIR_RESULTS, exist_ok=True)
     nombre_json = f"circuito_etapa_{etapa}.json"
     ruta_json = os.path.join(SVGreader.DIR_RESULTS, nombre_json)
@@ -481,8 +492,6 @@ if __name__ == "__main__":
     creador_logico = arquitecto.crear_arquitecto(config_tour["expansiones_activas"])
 
     etapa_global = 1
-    etapas_generadas = []  # Para el PDF
-    
     for sesion in range(1, config_tour["total_sesiones"] + 1):
         for etapa_en_sesion in range(1, config_tour["etapas_por_sesion"] + 1):
             print(f"\nGenerando matemáticas para: Sesión {sesion}, Etapa {etapa_en_sesion}...")
@@ -498,25 +507,31 @@ if __name__ == "__main__":
                     else:
                         print("☀️  Esta etapa no tendrá clima especial.")
 
-                # Obtener nombre personalizado
+# =============================================================================
+#                 cabecera = f"Tour: {config_tour['nombre_tour']} | Sesión {sesion}/{config_tour['total_sesiones']} | Etapa {etapa_global}/{config_tour['total_etapas']}"
+#                 
+# =============================================================================
+                # Obtener el nombre personalizado de la etapa
                 clave_etapa = f"S{sesion}E{etapa_global}"
                 nombre_personalizado = config_tour["nombres_etapas"].get(clave_etapa, "")
                 
-                # Construir cabecera
+                # Construir el nombre de la etapa para cabecera
                 if nombre_personalizado:
                     nombre_etapa = f"{nombre_personalizado} (S:{sesion} E:{etapa_en_sesion})"
                 else:
                     nombre_etapa = f"Sesión {sesion} - Etapa {etapa_en_sesion}"
                 
+                # Cabecera del tour (para SVG y PDF)
                 cabecera = f"Tour: {config_tour['nombre_tour']} | {nombre_etapa}"
+                
+                
+                
                 cadena_limpia = Survey.formatear_secuencia_limpia(secuencia_perfecta)
                 nombre_svg = f"circuito_etapa_{etapa_global}.svg"
-                
                 ruta_svg, rumbo_final = construir_y_guardar_circuito_svg(
                     secuencia_perfecta, cabecera, cadena_limpia, nombre_svg,
                     meteoros_por_loseta=meteoros_por_loseta
                 )
-                
                 if ruta_svg:
                     generar_json_etapa(
                         secuencia_perfecta,
@@ -524,33 +539,9 @@ if __name__ == "__main__":
                         sesion,
                         etapa_global,
                         rumbo_final,
-                        meteoros_por_loseta=meteoros_por_loseta,
-                        nombre_personalizado=nombre_personalizado
+                        meteoros_por_loseta=meteoros_por_loseta
                     )
-                    
-                    # Guardar para el PDF
-                    etapas_generadas.append({
-                        "sesion": sesion,
-                        "etapa": etapa_global,
-                        "secuencia": secuencia_perfecta,
-                        "meteoros": meteoros_por_loseta,
-                        "svg_path": ruta_svg,
-                        "nombre_personalizado": nombre_personalizado
-                    })
-                    
                 etapa_global += 1
             else:
                 print(f"No se pudo generar la Etapa {etapa_global}. Cancelando Tour.")
                 break
-    
-    # Generar PDF al final
-    if etapas_generadas:
-        try:
-            import PDFGenerator
-            PDFGenerator.generar_plan_carrera(
-                config_tour['nombre_tour'], 
-                etapas_generadas, 
-                f"plan_carrera_{config_tour['nombre_tour']}.pdf"
-            )
-        except Exception as e:
-            print(f"⚠️ Error al generar PDF: {e}")
