@@ -13,7 +13,7 @@ Eventos:
     Post:   Refactorizacion de McPyGen
             
 """
-# geometria.py
+# regeometria.py
 
 from shapely.affinity import translate, rotate
 import math
