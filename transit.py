@@ -258,44 +258,53 @@ def asignar_metas_volantes(secuencia, catalogo, probabilidad=0.8):
 
 def dibujar_meta_svg(svg_body, pieza_actual, tipo_meta):
     """
-    Dibuja una línea de meta volante en el SVG.
-    tipo_meta: "sprint" (verde claro) o "montana" (blanco con rayas rosas)
+    Dibuja una línea de meta volante PARALELA a la dirección de la pista,
+    centrada en el punto de salida de la loseta.
     """
-    # Obtener el punto de conexión (salida de la pieza actual)
-    salida_x = pieza_actual["salida"].x
-    salida_y = pieza_actual["salida"].y
+    # Punto central (salida de la loseta)
+    cx = pieza_actual["salida"].x
+    cy = pieza_actual["salida"].y
     
-    # Vector de dirección de la salida
+    # Vector de dirección de la salida (dirección de marcha)
     vx = pieza_actual["salida"].x - pieza_actual["entrada"].x
     vy = pieza_actual["salida"].y - pieza_actual["entrada"].y
     longitud = math.sqrt(vx**2 + vy**2)
+    
     if longitud > 0:
         vx /= longitud
         vy /= longitud
+    else:
+        # Fallback (horizontal)
+        vx, vy = 1.0, 0.0
+
+# === CONTROL DEL GIRO DE 90° ===
+    # Cambia este valor a -1 si está girada 90°
+    flip = -1        # Prueba con 1 primero. Si está girada, cambia a -1
     
-    # Vector perpendicular (rotar 90°)
-    px = -vy
-    py = vx
+    vx = vx * flip
+    vy = vy * flip
     
-    # Longitud de la línea (suficiente para sobresalir del circuito)
-    longitud_linea = 50
+    # Longitud de la meta
+    half_length = 35   # ≈ 70 píxeles totales    
     
-    # Puntos de la línea
-    x1 = salida_x - px * longitud_linea
-    y1 = salida_y - py * longitud_linea
-    x2 = salida_x + px * longitud_linea
-    y2 = salida_y + py * longitud_linea
+    # Puntos de la línea (paralela a la dirección de la pista)
+    x1 = cx - vx * half_length
+    y1 = cy - vy * half_length
+    x2 = cx + vx * half_length
+    y2 = cy + vy * half_length
     
     # Estilo según tipo de meta
     if tipo_meta == "sprint":
         color = "#90EE90"  # light green
         stroke_width = 8
-        svg_body += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="{stroke_width}" opacity="0.8" />'
+        svg_body += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="{stroke_width}" opacity="0.85" />'
     elif tipo_meta == "montana":
+        # Línea base blanca
         color = "#FFFFFF"
         stroke_width = 8
         svg_body += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="{stroke_width}" opacity="0.9" />'
-        svg_body += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#FF69B4" stroke-width="{stroke_width}" stroke-dasharray="6,4" opacity="0.7" />'
+        # Línea superior rosa con rayas
+        svg_body += f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="#FF69B4" stroke-width="{stroke_width}" stroke-dasharray="6,4" opacity="0.85" />'
     
     return svg_body
 
@@ -588,9 +597,11 @@ def generar_svg_etapa(secuencia, nombre_etapa, nombre_tour, sesion, etapa_global
 
     # Dibujar líneas de meta
     for idx, pieza in enumerate(circuito_final):
-        if metas.get("sprint") == idx:
+        #if metas.get("sprint") == idx:
+        if metas.get("sprint") is not None and idx == metas["sprint"] -1:   # o -1 según convenga
             svg_body = dibujar_meta_svg(svg_body, pieza, "sprint")
-        if metas.get("montana") == idx:
+        #if metas.get("montana") == idx:
+        if metas.get("montana") is not None and idx == metas["montana"] -1:   # o -1 según convenga
             svg_body = dibujar_meta_svg(svg_body, pieza, "montana")
 
     # Guardar
